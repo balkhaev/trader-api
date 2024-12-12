@@ -19,4 +19,4 @@ RUN npm run build
 CMD ["npm", "start"]
 
 # Указываем порт для работы приложения
-EXPOSE 3000
+EXPOSE 8000
