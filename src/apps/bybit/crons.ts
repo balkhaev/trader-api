@@ -37,7 +37,7 @@ export const sellCron = new CronJob(
         candles15
       )
 
-      console.log(position.symbol, indicators)
+      console.log(position.symbol, position.curRealisedPnl, indicators)
 
       if (signal === -1) {
         try {
