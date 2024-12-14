@@ -76,13 +76,13 @@ export function buyShortSignal({
     currentPrice,
     candles240,
     BUY_SIGNAL_CANDLES_LIMIT,
-    4
+    2
   )
   const { signal: st30min } = getSupertrendSignal(
     currentPrice,
     candles30,
     BUY_SIGNAL_CANDLES_LIMIT,
-    4
+    2
   )
   const { signal: st1min } = getSupertrendSignal(
     currentPrice,

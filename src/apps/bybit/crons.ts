@@ -27,7 +27,7 @@ export const checkPositionsSell = async () => {
     const symbol = buy.symbol
     const currentPrice = await fetchCurrentPrice(symbol)
     const trades = await fetchTradeHistory(symbol)
-    const lastSellTrade = trades.reverse().find((t) => t.side === "Sell")
+    const lastSellTrade = trades.reverse().find((t) => t.side === "Buy")
     const [candles1, candles3, candles15, candles30] = await Promise.all(
       CANDLES_TO_FETCH_FOR_SELL.map((interval) =>
         fetchKline({ symbol, interval })
