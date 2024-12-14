@@ -43,6 +43,8 @@ export const checkPositionsSell = async () => {
       candles30
     )
 
+    console.log("check", symbol, signal, indicators)
+
     if (differenceInMinutes(new Date(), buy.created_at) > 5) {
       return
     }

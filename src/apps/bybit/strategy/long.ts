@@ -12,8 +12,7 @@ import {
 import { isAboveEMA } from "../../blackbox/indicators/ema"
 import { isVolumeIncreasing } from "../../blackbox/indicators/volume"
 import { Tables } from "../../../database.types"
-
-const boolToSignal = (value: boolean): Signal => (value ? 1 : 0)
+import { boolToSignal } from "../utils"
 
 type SignalOpts = {
   analysis: Analyze
@@ -208,7 +207,7 @@ export function sellLongSignal(
       signal: 0,
       indicators: [
         {
-          name: "Wait 15 min",
+          name: "Wait 30 min",
           signal: 0,
           data: `${stayTime - Date.now() / 1000} need more seconds`,
         },
@@ -218,7 +217,7 @@ export function sellLongSignal(
 
   const { signal: st3 } = getSupertrendSignal(currentPrice, candles3, 10, 2)
   const { signal: st15 } = getSupertrendSignal(currentPrice, candles15, 10, 2)
-  // const { signal: st30 } = getSupertrendSignal(currentPrice, candles30, 10, 2)
+  const { signal: st30 } = getSupertrendSignal(currentPrice, candles30, 10, 2)
 
   const signal = getCrossingSignal([st3, st15])
 
@@ -227,7 +226,7 @@ export function sellLongSignal(
     indicators: [
       { name: "Supertrend 3m", signal: st3 },
       { name: "Supertrend 15m", signal: st15 },
-      // { name: "Supertrend 30m", signal: st30 },
+      { name: "Supertrend 30m", signal: st30 },
     ],
   }
 }
