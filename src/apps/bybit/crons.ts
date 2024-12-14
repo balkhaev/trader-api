@@ -35,6 +35,11 @@ export const checkPositionsSell = async () => {
       )
     )
 
+    if (!lastSellTrade) {
+      console.log("WHERES LAST TRADE?!", symbol, trades)
+      return
+    }
+
     const { signal, indicators } = sellSignal(
       lastSellTrade,
       currentPrice,
