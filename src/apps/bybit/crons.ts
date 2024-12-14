@@ -25,6 +25,9 @@ export const checkPositionsSell = async () => {
 
   for (const buy of buys) {
     const symbol = buy.symbol
+
+    console.log("=======", symbol, "=========")
+
     const currentPrice = await fetchCurrentPrice(symbol)
     const [candles1, candles3, candles15, candles30] = await Promise.all(
       CANDLES_TO_FETCH_FOR_SELL.map((interval) =>
@@ -44,7 +47,7 @@ export const checkPositionsSell = async () => {
       candles30
     )
 
-    console.log("check", symbol, signal, indicators)
+    console.log(indicators)
 
     if (signal === -1) {
       try {

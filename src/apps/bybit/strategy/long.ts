@@ -217,7 +217,6 @@ export function sellLongSignal(
 
   const { signal: st3 } = getSupertrendSignal(currentPrice, candles3, 10, 2)
   const { signal: st15 } = getSupertrendSignal(currentPrice, candles15, 10, 2)
-  const { signal: st30 } = getSupertrendSignal(currentPrice, candles30, 10, 2)
 
   const signal = getCrossingSignal([st3, st15])
 
@@ -226,7 +225,6 @@ export function sellLongSignal(
     indicators: [
       { name: "Supertrend 3m", signal: st3 },
       { name: "Supertrend 15m", signal: st15 },
-      { name: "Supertrend 30m", signal: st30 },
     ],
   }
 }
