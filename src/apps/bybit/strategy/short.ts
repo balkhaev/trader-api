@@ -5,7 +5,6 @@ import { MetaSignal } from "../types"
 import { isAboveEMA } from "../../blackbox/indicators/ema"
 import { Tables } from "../../../database.types"
 import { boolToSignal } from "../utils"
-import { addMinutes } from "date-fns"
 
 const BUY_SIGNAL_CANDLES_LIMIT = 10
 
@@ -34,25 +33,25 @@ export function buyShortSignal({
     currentPrice,
     candles240,
     BUY_SIGNAL_CANDLES_LIMIT,
-    2
+    1
   )
   const { signal: st30min } = getSupertrendSignal(
     currentPrice,
     candles30,
     BUY_SIGNAL_CANDLES_LIMIT,
-    2
+    1
   )
   const { signal: st15min } = getSupertrendSignal(
     currentPrice,
     candles15,
     BUY_SIGNAL_CANDLES_LIMIT,
-    2
+    1
   )
   const { signal: st3min } = getSupertrendSignal(
     currentPrice,
     candles3,
     BUY_SIGNAL_CANDLES_LIMIT,
-    2
+    1
   )
   const { signal: st1min } = getSupertrendSignal(
     currentPrice,
@@ -62,11 +61,12 @@ export function buyShortSignal({
   )
 
   const st1Reversed = reverseSignal(st1min)
+  const st3Reversed = reverseSignal(st3min)
 
   return {
     signal: getCrossingSignal([
       st1Reversed,
-      st3min,
+      st3Reversed,
       st15min,
       st30min,
       st240min,
@@ -79,8 +79,8 @@ export function buyShortSignal({
         signal: st1Reversed,
       },
       {
-        name: "Supertrend 3 min",
-        signal: st3min,
+        name: "Supertrend reversed 3 min",
+        signal: st3Reversed,
       },
       {
         name: "Supertrend 15 min",
@@ -112,22 +112,6 @@ export function sellShortSignal(
   candles1: Candle[],
   candles3: Candle[]
 ): MetaSignal {
-  const buyedTime = parseInt(buy.created_at)
-  const stayTime = addMinutes(buyedTime, 5).getTime()
-
-  if (stayTime > Date.now()) {
-    return {
-      signal: 0,
-      indicators: [
-        {
-          name: "Wait 5 min",
-          signal: 0,
-          data: `${stayTime - Date.now() / 1000} need more seconds`,
-        },
-      ],
-    }
-  }
-
   const pnl = parseFloat(buy.qty) * (currentPrice - buy.price)
   const takeProfit = buy.take_profit && pnl > buy.take_profit
   const stopLoss = buy.stop_loss && pnl < buy.stop_loss

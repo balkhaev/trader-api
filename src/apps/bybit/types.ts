@@ -19,7 +19,7 @@ export type MetaSignal = {
   indicators: {
     name: string
     signal?: any
-    data?: string | number
+    data?: string | number | boolean
   }[]
   newTrend?: boolean
 }

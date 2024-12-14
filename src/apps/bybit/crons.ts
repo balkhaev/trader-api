@@ -1,10 +1,16 @@
 import { fetchCurrentPrice, fetchKline, fetchTradeHistory } from "./sdk/methods"
 import { sell } from "./buysell"
 import { sellLongSignal } from "./strategy/long"
-import { differenceInMinutes, format } from "date-fns"
+import {
+  differenceInMinutes,
+  format,
+  formatDistanceToNow,
+  isFuture,
+} from "date-fns"
 import { KlineIntervalV3 } from "bybit-api"
 import { supabase } from "../../lib/supabase"
 import { sellShortSignal } from "./strategy/short"
+import { boolToSignal } from "./utils"
 
 const CANDLES_TO_FETCH_FOR_SELL: KlineIntervalV3[] = ["1", "3", "15", "30"]
 
@@ -52,7 +58,18 @@ export const checkPositionsSell = async () => {
     const stopLoss = buy.stop_loss && pnl < buy.stop_loss
 
     if (takeProfit || stopLoss) {
+      indicators = [
+        { name: "Stop loss", signal: boolToSignal(takeProfit ?? false) },
+        { name: "Take profit", signal: boolToSignal(takeProfit ?? false) },
+      ]
       signal = -1
+    }
+
+    if (buy.wait_for && isFuture(buy.wait_for)) {
+      indicators = [
+        { name: "Wait", signal: 0, data: formatDistanceToNow(buy.wait_for) },
+      ]
+      signal = 0
     }
 
     console.log({ takeProfit, stopLoss })

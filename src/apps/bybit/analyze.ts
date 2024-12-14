@@ -4,7 +4,7 @@ import { buy } from "./buysell"
 import { analyzeSymbolQueue } from "./queue"
 import { fetchCurrentPrice, fetchTickers } from "./sdk/methods"
 import { io } from "../../server"
-import { differenceInMinutes } from "date-fns"
+import { addMinutes, differenceInMinutes } from "date-fns"
 
 export async function getTrendTickers() {
   const tickers = await fetchTickers()
@@ -89,6 +89,10 @@ analyzeSymbolQueue.on("completed", async (job) => {
 
     if (order) {
       const currentPrice = await fetchCurrentPrice(symbol)
+      const waitFor = isLongSignal
+        ? addMinutes(new Date(), 30).getTime()
+        : addMinutes(new Date(), 9).getTime()
+
       const { error } = await supabase.from("buys").insert({
         price: currentPrice,
         symbol: symbol,
@@ -97,6 +101,7 @@ analyzeSymbolQueue.on("completed", async (job) => {
         indicators: job.returnvalue[buyType].indicators,
         type: buyType,
         coin: symbol.slice(0, -4),
+        wait_for: waitFor,
       })
 
       if (error) {

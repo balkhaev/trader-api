@@ -1,9 +1,8 @@
-import { Analyze, Candle, Signal } from "../../../types"
+import { Analyze, Candle } from "../../../types"
 import { getSupertrendSignal } from "../../blackbox/signals/supertrend"
 import { getCrossingSignal } from "../../blackbox/strategies"
 import { MACD } from "technicalindicators"
 import { MetaSignal } from "../types"
-import { addMinutes } from "date-fns"
 import { isBullishDivergence } from "../../blackbox/patterns"
 import { isAboveEMA } from "../../blackbox/indicators/ema"
 import { isVolumeIncreasing } from "../../blackbox/indicators/volume"
@@ -157,22 +156,6 @@ export function sellLongSignal(
       signal: -1,
       indicators: [
         { name: `Take Profit or Stop Loss Triggered`, signal: -1, data: pnl },
-      ],
-    }
-  }
-
-  const buyedTime = new Date(buy.created_at).getTime()
-  const stayTime = addMinutes(buyedTime, 30).getTime()
-
-  if (stayTime > Date.now()) {
-    return {
-      signal: 0,
-      indicators: [
-        {
-          name: "Wait 30 min",
-          signal: 0,
-          data: `${stayTime - Date.now() / 1000} need more seconds`,
-        },
       ],
     }
   }

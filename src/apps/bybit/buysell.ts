@@ -21,15 +21,20 @@ export const buy = async (symbol: string, usdt: number) => {
 
   addWaitBuySymbol(symbol)
 
-  const buyedCoins = await fetchBuyedCoins()
-  const symbolPosition = buyedCoins.find((p) => p.coin === coin)
+  const { data: buyedCoins } = await supabase
+    .from("buys")
+    .select()
+    .eq("selled", false)
+  const symbolPosition = buyedCoins?.find((p) => p.coin === coin)
 
   if (symbolPosition) {
     rmWaitBuySymbol(symbol)
     return
   }
 
-  if (countWaitBuySymbols() + buyedCoins.length >= LIMIT_BUYS) {
+  const buyedCount = buyedCoins?.length ?? 0
+
+  if (countWaitBuySymbols() + buyedCount >= LIMIT_BUYS) {
     rmWaitBuySymbol(symbol)
     return
   }

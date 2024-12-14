@@ -107,6 +107,7 @@ export type Database = {
           symbol: string
           take_profit: number | null
           type: string
+          wait_for: number | null
         }
         Insert: {
           coin: string
@@ -121,6 +122,7 @@ export type Database = {
           symbol: string
           take_profit?: number | null
           type: string
+          wait_for?: number | null
         }
         Update: {
           coin?: string
@@ -135,6 +137,7 @@ export type Database = {
           symbol?: string
           take_profit?: number | null
           type?: string
+          wait_for?: number | null
         }
         Relationships: []
       }
