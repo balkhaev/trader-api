@@ -39,7 +39,7 @@ analyzeSymbolQueue.on("completed", async (job) => {
     .insert(snakecaseKeys(job.returnvalue, { deep: false }))
 
   if (error) {
-    console.error(job, error)
+    console.error("in completed", error)
     throw error
   }
 

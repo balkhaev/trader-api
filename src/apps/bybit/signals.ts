@@ -1,4 +1,4 @@
-import { PositionV5 } from "bybit-api"
+import { PositionV5, WalletBalanceV5Coin } from "bybit-api"
 import { Analyze, Candle, Signal } from "../../types"
 import { getSupertrendSignal } from "../blackbox/signals/supertrend"
 import { getCrossingSignal } from "../blackbox/strategies"
@@ -14,16 +14,6 @@ export type MetaSignal = {
     data?: string | number
   }[]
   newTrend?: boolean
-}
-
-type SignalOpts = {
-  analysis: Analyze
-  currentPrice: number
-  candles3: Candle[]
-  candles15: Candle[]
-  candles30: Candle[]
-  candles60: Candle[]
-  candles240: Candle[]
 }
 
 function isBullishEngulfing(candles: Candle[]): boolean {
@@ -95,6 +85,15 @@ function isBearishDivergence(candles: Candle[], macdHist: number[]): boolean {
   )
 }
 
+type SignalOpts = {
+  analysis: Analyze
+  currentPrice: number
+  candles3: Candle[]
+  candles15: Candle[]
+  candles30: Candle[]
+  candles240: Candle[]
+}
+
 export function buySignal({
   analysis,
   currentPrice,
@@ -132,6 +131,20 @@ export function buySignal({
     return {
       signal: 0,
       indicators: [{ name: "Volume not increasing", signal: 0 }],
+    }
+  }
+  // Проверка краткосрочного тренда на 3-минутных свечах
+  const { signal: shortTrend } = getSupertrendSignal(
+    currentPrice,
+    candles3,
+    BUY_SIGNAL_CANDLES_LIMIT,
+    1
+  )
+
+  if (!shortTrend) {
+    return {
+      signal: 0,
+      indicators: [{ name: "Short-term trend bearish (3m)", signal: 0 }],
     }
   }
 
@@ -211,24 +224,13 @@ export function buySignal({
 }
 
 export function sellSignal(
-  position: PositionV5,
+  coin: WalletBalanceV5Coin,
   currentPrice: number,
   candles1: Candle[],
   candles3: Candle[],
   candles15: Candle[],
   candles30: Candle[]
 ): MetaSignal {
-  const entryTime = parseInt(position.createdTime)
-  const positionAge = entryTime ? Date.now() - entryTime : 0
-  const minHoldingTime = 1 * 30 * 60 * 1000 // 2 свечи по 15 минут
-
-  if (positionAge < minHoldingTime) {
-    return {
-      signal: 0,
-      indicators: [{ name: "Minimum holding time not met", signal: 0 }],
-    }
-  }
-
   const isBearishTrend = !isAboveEMA(candles30, 50) // Проверка через EMA
 
   if (!isBearishTrend) {
@@ -238,7 +240,7 @@ export function sellSignal(
     }
   }
 
-  const pnl = parseFloat(position.unrealisedPnl)
+  const pnl = parseFloat(coin.cumRealisedPnl)
   const takeProfitPnl = 0.2
   const stopLossPnl = -0.5
   const takeProfit = pnl > takeProfitPnl

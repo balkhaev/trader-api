@@ -7,6 +7,7 @@ import { fetchKline } from "./sdk/methods"
 import { ratingAnalyze } from "../blackbox"
 import { KlineIntervalV3 } from "bybit-api"
 import { buySignal } from "./signals"
+import { getSupertrendSignal } from "../blackbox/signals/supertrend"
 
 export const analyzeSymbolQueue = new Queue<{ symbol: string }>(
   "bybit-analyze",
@@ -19,21 +20,14 @@ export const analyzeSymbolQueue = new Queue<{ symbol: string }>(
   }
 )
 
-export const CANDLES_TO_FETCH: KlineIntervalV3[] = [
-  "3",
-  "15",
-  "30",
-  "60",
-  "240",
-]
+export const CANDLES_TO_FETCH: KlineIntervalV3[] = ["3", "15", "30", "240"]
 
 analyzeSymbolQueue.process(4, async (job) => {
-  const [candles3, candles15, candles30, candles60, candles240] =
-    await Promise.all(
-      CANDLES_TO_FETCH.map((interval) =>
-        fetchKline({ symbol: job.data.symbol, interval })
-      )
+  const [candles3, candles15, candles30, candles240] = await Promise.all(
+    CANDLES_TO_FETCH.map((interval) =>
+      fetchKline({ symbol: job.data.symbol, interval })
     )
+  )
 
   const { result: tickers } = await bybitRestClient.getTickers({
     category: "spot",
@@ -56,13 +50,17 @@ analyzeSymbolQueue.process(4, async (job) => {
     candles3,
     candles15,
     candles30,
-    candles60,
     candles240,
   })
+  const signal =
+    strategy.signal === 1
+      ? getSupertrendSignal(ticker.lastPrice, candles3, 10, 1).signal
+      : strategy.signal
 
   return {
     ...analysis30,
     ...strategy,
+    signal,
     rating,
     volume24h: parseInt(tickers.list[0].volume24h),
     change24h: parseFloat(tickers.list[0].price24hPcnt),

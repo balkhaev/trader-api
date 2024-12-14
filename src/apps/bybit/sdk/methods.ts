@@ -75,3 +75,13 @@ export async function fetchInstrumentInfo(symbol: string) {
 
   return instrument
 }
+
+export async function fetchBuyedCoins() {
+  const { result } = await bybitRestClient.getWalletBalance({
+    accountType: "UNIFIED",
+  })
+
+  return result.list[0].coin.filter(
+    (el) => el.coin.toUpperCase() !== process.env.BASE_CURRENCY
+  )
+}

@@ -5,7 +5,7 @@ import { bybitRestClient } from "./sdk/clients"
 import express from "express"
 import { listenBybit, unlistenBybit } from "./websocket"
 import { analyzeSymbolQueue } from "./queue"
-import { fetchPositions } from "./sdk/methods"
+import { fetchBuyedCoins } from "./sdk/methods"
 
 const router = express.Router()
 
@@ -101,8 +101,8 @@ router.post("/market/:symbol/unlisten", async (req, res) => {
   })
 })
 
-router.get("/positions", async (req, res) => {
-  const data = await fetchPositions()
+router.get("/coins", async (req, res) => {
+  const data = await fetchBuyedCoins()
 
   res.json(data)
 })

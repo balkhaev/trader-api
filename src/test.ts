@@ -1,7 +1,7 @@
 import { configDotenv } from "dotenv"
+configDotenv({ path: ".env" })
 import { bybitRestClient } from "./apps/bybit/sdk/clients"
 
-configDotenv({ path: ".env" })
 const axios = require("axios")
 
 console.log("TEST")
@@ -9,11 +9,8 @@ console.log("TEST")
   console.log("TEST1")
 
   bybitRestClient
-    .getTickers({
-      category: "spot",
-      baseCoin: "BTC",
-    })
-    .then((res) => console.log(res))
+    .getWalletBalance({ accountType: "UNIFIED" })
+    .then((res) => console.log(res.result.list[0].coin))
 
   // const res2 = await axios.get("https://app.scrapingbee.com/api/v1", {
   //   params: {

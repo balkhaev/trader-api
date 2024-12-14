@@ -1,4 +1,4 @@
-import { fetchCurrentPrice, fetchKline, fetchPositions } from "./sdk/methods"
+import { fetchBuyedCoins, fetchCurrentPrice, fetchKline } from "./sdk/methods"
 import { sell } from "./buysell"
 import { sellSignal } from "./signals"
 import { format } from "date-fns"
@@ -10,22 +10,23 @@ const CANDLES_TO_FETCH_FOR_SELL: KlineIntervalV3[] = ["1", "3", "15", "30"]
 export const checkPositionsSell = async () => {
   console.log("SELL CHECK", format(new Date(), "yyyy-MM-dd HH:mm:ss"))
 
-  const positions = await fetchPositions()
+  const buyedCoins = await fetchBuyedCoins()
 
-  if (!positions || positions.length === 0) {
+  if (buyedCoins.length === 0) {
     return
   }
 
-  for (const position of positions) {
-    const currentPrice = await fetchCurrentPrice(position.symbol)
+  for (const buyedCoin of buyedCoins) {
+    const symbol = buyedCoin.coin + process.env.BASE_CURRENCY!
+    const currentPrice = await fetchCurrentPrice(symbol)
     const [candles1, candles3, candles15, candles30] = await Promise.all(
       CANDLES_TO_FETCH_FOR_SELL.map((interval) =>
-        fetchKline({ symbol: position.symbol, interval })
+        fetchKline({ symbol, interval })
       )
     )
 
     const { signal, indicators } = sellSignal(
-      position,
+      buyedCoin,
       currentPrice,
       candles1,
       candles3,
@@ -35,14 +36,14 @@ export const checkPositionsSell = async () => {
 
     if (signal === -1) {
       try {
-        await sell(position.symbol)
+        await sell(buyedCoin.coin)
       } catch (e) {
         console.log("error in sell", e)
       }
 
       const { error } = await supabase.from("sells").insert({
-        unrealised_pnl: position.unrealisedPnl,
-        symbol: position.symbol,
+        unrealised_pnl: buyedCoin.cumRealisedPnl,
+        symbol,
         candles1,
         candles3,
         candles15,

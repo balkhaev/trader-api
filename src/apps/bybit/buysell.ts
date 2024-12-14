@@ -1,8 +1,8 @@
 import {
   createOrder,
+  fetchBuyedCoins,
   fetchCurrentPrice,
   fetchInstrumentInfo,
-  fetchPositions,
 } from "./sdk/methods"
 import { io } from "../../server"
 import {
@@ -16,18 +16,19 @@ import { LIMIT_BUYS, USDT_QTY } from "./consts"
 export const buy = async (symbol: string) => {
   if (hasWaitBuySymbol(symbol)) return
 
+  const coin = symbol.replace(process.env.BASE_CURRENCY!, "")
+
   addWaitBuySymbol(symbol)
 
-  const positions = await fetchPositions()
-  const symbolPosition = positions.find((p) => p.symbol === symbol)
-  const sizedPositions = positions.filter((p) => parseFloat(p.size) > 0)
+  const buyedCoins = await fetchBuyedCoins()
+  const symbolPosition = buyedCoins.find((p) => p.coin === coin)
 
-  if (symbolPosition && parseFloat(symbolPosition.size) > 0) {
+  if (symbolPosition) {
     rmWaitBuySymbol(symbol)
     return
   }
 
-  if (countWaitBuySymbols() + sizedPositions.length >= LIMIT_BUYS) {
+  if (countWaitBuySymbols() + buyedCoins.length >= LIMIT_BUYS) {
     rmWaitBuySymbol(symbol)
     return
   }
@@ -68,23 +69,25 @@ export const buy = async (symbol: string) => {
   }
 }
 
-export const sell = async (symbol: string) => {
-  console.log("try sell", symbol)
+export const sell = async (coin: string) => {
+  console.log("try sell", coin)
 
-  const [position] = await fetchPositions(symbol)
+  const symbol = coin + process.env.BASE_CURRENCY
+  const buyedCoins = await fetchBuyedCoins()
+  const buyedCoin = buyedCoins.find((p) => p.coin === coin)
 
-  if (!position || position.size === "0") {
+  if (!buyedCoin) {
     throw new Error("Нет открытой позиции для продажи.")
   }
 
-  const qty = position.size // Текущее количество монет
+  const qty = buyedCoin.availableToWithdraw // Текущее количество монет
 
   const order = await createOrder({
     symbol,
     side: "Sell",
     orderType: "Market",
     qty,
-    marketUnit: "quoteCoin",
+    marketUnit: "baseCoin",
   })
 
   console.log(symbol, "selled")
