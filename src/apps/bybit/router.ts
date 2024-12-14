@@ -42,12 +42,12 @@ router.post("/analysis", async (req, res) => {
 })
 
 router.get("/status/bybit", async (req, res) => {
-  const activeJobs = await analyzeSymbolQueue.getActiveCount()
+  const jobs = await analyzeSymbolQueue.count()
   const isPaused = await analyzeSymbolQueue.isPaused()
 
   res.json({
     status: "ok",
-    result: { working: !isPaused && activeJobs > 0 },
+    result: { working: !isPaused, jobs },
   })
 })
 

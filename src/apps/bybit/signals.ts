@@ -3,6 +3,8 @@ import { Analyze, Candle, Signal } from "../../types"
 import { getSupertrendSignal } from "../blackbox/signals/supertrend"
 import { getCrossingSignal } from "../blackbox/strategies"
 import { BUY_SIGNAL_CANDLES_LIMIT } from "./consts"
+import { ATR, MACD } from "technicalindicators"
+import { getTechnicalAnalyze } from "../blackbox/indicators"
 
 export type MetaSignal = {
   signal: Signal
@@ -14,12 +16,83 @@ export type MetaSignal = {
   newTrend?: boolean
 }
 
-type BuySignalOpts = {
+type SignalOpts = {
   analysis: Analyze
   currentPrice: number
   candles3: Candle[]
   candles15: Candle[]
   candles30: Candle[]
+  candles60: Candle[]
+  candles240: Candle[]
+}
+
+function isBullishEngulfing(candles: Candle[]): boolean {
+  const [prev, last] = candles.slice(-2)
+  return (
+    prev.close < prev.open &&
+    last.close > last.open &&
+    last.close > prev.open &&
+    last.open < prev.close
+  )
+}
+
+function isAboveEMA(candles: Candle[], period: number): boolean {
+  const ema =
+    candles.slice(-period).reduce((sum, candle) => sum + candle.close, 0) /
+    period
+  return candles[candles.length - 1].close > ema
+}
+
+function calculateATR(candles: Candle[]): number {
+  return (
+    ATR.calculate({
+      low: candles.map((c) => c.low),
+      high: candles.map((c) => c.high),
+      close: candles.map((c) => c.close),
+      period: 10,
+    }).pop() || 0
+  )
+}
+
+function isVolumeIncreasing(candles: Candle[]): boolean {
+  const [prev, last] = candles.slice(-2)
+  return last.volume > prev.volume
+}
+
+function isBullishDivergence(candles: Candle[], macdHist: number[]): boolean {
+  const prices = candles.map((c) => c.close)
+  const lastPrice = prices[prices.length - 1]
+  const prevPrice = prices[prices.length - 2]
+  const lastMACD = macdHist[macdHist.length - 1]
+  const prevMACD = macdHist[macdHist.length - 2]
+
+  return (
+    lastPrice > prevPrice && // Цена делает более высокие минимумы
+    lastMACD < prevMACD // MACD гистограмма делает более низкие минимумы
+  )
+}
+
+function isBearishEngulfing(candles: Candle[]): boolean {
+  const [prev, last] = candles.slice(-2)
+  return (
+    prev.close > prev.open &&
+    last.close < last.open &&
+    last.close < prev.open &&
+    last.open > prev.close
+  )
+}
+
+function isBearishDivergence(candles: Candle[], macdHist: number[]): boolean {
+  const prices = candles.map((c) => c.close)
+  const lastPrice = prices[prices.length - 1]
+  const prevPrice = prices[prices.length - 2]
+  const lastMACD = macdHist[macdHist.length - 1]
+  const prevMACD = macdHist[macdHist.length - 2]
+
+  return (
+    lastPrice < prevPrice && // Цена делает более низкие максимумы
+    lastMACD > prevMACD // MACD гистограмма делает более высокие максимумы
+  )
 }
 
 export function buySignal({
@@ -28,160 +101,115 @@ export function buySignal({
   candles3,
   candles15,
   candles30,
-}: BuySignalOpts): MetaSignal {
-  const { signal: st3min, newTrend: st3minTrend } = getSupertrendSignal(
+  candles240,
+}: SignalOpts): MetaSignal {
+  const { signal: globalTrend } = getSupertrendSignal(
     currentPrice,
-    candles3,
+    candles240,
     BUY_SIGNAL_CANDLES_LIMIT,
     2
   )
+  if (
+    !globalTrend ||
+    !analysis.macd?.histogram ||
+    !analysis.stochasticRsi ||
+    !analysis.adx?.adx ||
+    !analysis.macd.histogram
+  ) {
+    return { signal: 0, indicators: [{ name: "Insufficient Data", signal: 0 }] }
+  }
 
-  const { signal: st15min } = getSupertrendSignal(
-    currentPrice,
-    candles15,
-    BUY_SIGNAL_CANDLES_LIMIT,
-    2
-  )
+  const isBullishTrend = isAboveEMA(candles240, 200)
 
-  const { signal: st30min } = getSupertrendSignal(
-    currentPrice,
-    candles30,
-    BUY_SIGNAL_CANDLES_LIMIT,
-    2
-  )
-
-  if (!analysis.rsi || !analysis.adx || !analysis.cci) {
+  if (!isBullishTrend) {
     return {
       signal: 0,
+      indicators: [{ name: "Global EMA trend bearish", signal: 0 }],
+    }
+  }
+
+  if (!isVolumeIncreasing(candles15)) {
+    return {
+      signal: 0,
+      indicators: [{ name: "Volume not increasing", signal: 0 }],
+    }
+  }
+
+  const macd = MACD.calculate({
+    values: candles30.map((candle) => candle.close),
+    fastPeriod: 8,
+    slowPeriod: 21,
+    signalPeriod: 5,
+    SimpleMAOscillator: false,
+    SimpleMASignal: false,
+  })
+
+  if (
+    isBullishDivergence(
+      candles30,
+      macd.map((m) => m.histogram!)
+    )
+  ) {
+    return {
+      signal: 1,
+      indicators: [{ name: "Bullish Divergence Detected", signal: 1 }],
+    }
+  }
+
+  const atr = calculateATR(candles30)
+  const takeProfitLevel = currentPrice + atr * 3
+  const stopLossLevel = currentPrice - atr * 2
+
+  if (analysis.stochasticRsi.stochRSI <= 20 && isBullishEngulfing(candles15)) {
+    return {
+      signal: 1,
       indicators: [
         {
-          name: "No tech info :(",
-          signal: analysis.rsi,
+          name: "Bullish Engulfing & Stochastic RSI Oversold",
+          signal: 1,
+          data: analysis.stochasticRsi.stochRSI,
         },
+        { name: "ATR Take Profit", signal: takeProfitLevel },
+        { name: "ATR Stop Loss", signal: stopLossLevel },
       ],
     }
   }
 
-  if (analysis.rsi > 60) {
+  if (analysis.stochasticRsi.stochRSI > 80) {
     return {
       signal: 0,
       indicators: [
         {
-          name: `High RSI (> 60)`,
+          name: "Stochastic RSI Overbought",
           signal: 0,
-          data: analysis.rsi,
+          data: analysis.stochasticRsi.stochRSI,
         },
       ],
     }
   }
 
-  if (analysis.adx?.adx < 15) {
+  if (
+    analysis.stochasticRsi.stochRSI > 40 &&
+    analysis.adx.adx >= 25 &&
+    analysis.macd.histogram > 0
+  ) {
     return {
-      signal: 0,
+      signal: 1,
       indicators: [
         {
-          name: "Weak ADX trend (< 15)",
-          signal: 0,
-          data: analysis.adx?.adx,
+          name: "Strong Trend Confirmed",
+          signal: 1,
+          data: analysis.stochasticRsi.stochRSI,
         },
+        { name: "ATR Take Profit", signal: takeProfitLevel },
+        { name: "ATR Stop Loss", signal: stopLossLevel },
       ],
     }
   }
 
-  if (analysis.adx.pdi < analysis.adx.mdi) {
-    return {
-      signal: 0,
-      indicators: [
-        {
-          name: "-ADX > +ADX",
-          signal: 0,
-          data: analysis.adx?.adx,
-        },
-      ],
-    }
-  }
-
-  if (analysis.cci > 100) {
-    return {
-      signal: 0,
-      indicators: [
-        {
-          name: "CCI > 100",
-          signal: 0,
-          data: analysis.cci,
-        },
-      ],
-    }
-  }
-
-  if (analysis.macd) {
-    if (analysis.macd.histogram && analysis.macd.histogram < 0) {
-      return {
-        signal: 0,
-        indicators: [
-          {
-            name: "MACD Histogram < 0",
-            signal: analysis.macd.MACD,
-          },
-        ],
-      }
-    }
-  }
-
-  // const { signal: st60min } =
-  //   getSupertrendSignal(currentPrice, candles60, BUY_SIGNAL_CANDLES_LIMIT, 1)
-
-  // const { signal: st240min } =
-  //   getSupertrendSignal(currentPrice, candles240, BUY_SIGNAL_CANDLES_LIMIT, 1)
-
-  return {
-    signal: getCrossingSignal([st3min, st15min, st30min, st3minTrend ? 1 : 0]),
-    indicators: [
-      {
-        name: "ST (10,3) 3 min",
-        signal: st3min,
-      },
-      {
-        name: "ST (10,2) 15 min",
-        signal: st15min,
-      },
-      {
-        name: "ST (10,2) 30 min",
-        signal: st30min,
-      },
-      {
-        name: "ADX",
-        signal: 1,
-        data: analysis.adx.adx,
-      },
-      {
-        name: "CCI",
-        signal: 1,
-        data: analysis.cci,
-      },
-      {
-        name: "MACD",
-        signal: 1,
-        data: analysis.macd?.MACD,
-      },
-      {
-        name: "RSI",
-        signal: 1,
-        data: analysis.rsi,
-      },
-    ],
-  }
+  return { signal: 0, indicators: [{ name: "No Valid Signal", signal: 0 }] }
 }
 
-/**
- * Сигнал продажи
- *
- * Продаем при пересечении сигналов
- * 3 и 15 минут в супертренде
- *
- * Либо если больше takeProfit'a
- * То выходим по 3 минутному сигналу
- */
 export function sellSignal(
   position: PositionV5,
   currentPrice: number,
@@ -190,92 +218,81 @@ export function sellSignal(
   candles15: Candle[],
   candles30: Candle[]
 ): MetaSignal {
-  const takeProfitPnl = 0.2
-  const stopLossPnl = -0.5
+  const entryTime = parseInt(position.createdTime)
+  const positionAge = entryTime ? Date.now() - entryTime : 0
+  const minHoldingTime = 1 * 30 * 60 * 1000 // 2 свечи по 15 минут
+
+  if (positionAge < minHoldingTime) {
+    return {
+      signal: 0,
+      indicators: [{ name: "Minimum holding time not met", signal: 0 }],
+    }
+  }
+
+  const isBearishTrend = !isAboveEMA(candles30, 50) // Проверка через EMA
+
+  if (!isBearishTrend) {
+    return {
+      signal: 0,
+      indicators: [{ name: "Bearish trend not confirmed", signal: 0 }],
+    }
+  }
 
   const pnl = parseFloat(position.unrealisedPnl)
-
+  const takeProfitPnl = 0.2
+  const stopLossPnl = -0.5
   const takeProfit = pnl > takeProfitPnl
-  const stopLoss = stopLossPnl > pnl
+  const stopLoss = pnl < stopLossPnl
 
-  const shortPeriod = 10
-  const shortMultiplier = 2
-  const longPeriod = 10
-  const longMultiplier = 2
+  const { signal: st3 } = getSupertrendSignal(currentPrice, candles3, 10, 2)
+  const { signal: st15 } = getSupertrendSignal(currentPrice, candles15, 10, 2)
+  const { signal: st30 } = getSupertrendSignal(currentPrice, candles30, 10, 2)
 
-  const { signal: st1 } = getSupertrendSignal(
-    currentPrice,
-    candles1,
-    shortPeriod,
-    shortMultiplier
-  )
-  const { signal: st3 } = getSupertrendSignal(
-    currentPrice,
-    candles3,
-    shortPeriod,
-    shortMultiplier
-  )
-  const { signal: st15 } = getSupertrendSignal(
-    currentPrice,
-    candles15,
-    longPeriod,
-    longMultiplier
-  )
-
-  const { signal: st30 } = getSupertrendSignal(
-    currentPrice,
-    candles30,
-    BUY_SIGNAL_CANDLES_LIMIT,
-    2
-  )
-
-  const signal = (() => {
-    if (takeProfit) {
-      if (pnl / takeProfitPnl > 1.5) {
-        return st1
-      }
-
-      return -1
+  if (takeProfit || stopLoss) {
+    return {
+      signal: -1,
+      indicators: [
+        { name: `Take Profit or Stop Loss Triggered`, signal: -1, data: pnl },
+      ],
     }
+  }
 
-    if (stopLoss) {
-      if (pnl / stopLossPnl > 1.5) {
-        return st1
-      }
-
-      return -1
+  if (isBearishEngulfing(candles30)) {
+    return {
+      signal: -1,
+      indicators: [{ name: "Bearish Engulfing detected", signal: -1 }],
     }
+  }
 
-    return getCrossingSignal([st3, st15, st30])
-  })()
+  const macd = MACD.calculate({
+    values: candles30.map((candle) => candle.close),
+    fastPeriod: 8,
+    slowPeriod: 21,
+    signalPeriod: 5,
+    SimpleMAOscillator: false,
+    SimpleMASignal: false,
+  })
+
+  if (
+    isBearishDivergence(
+      candles30,
+      macd.map((h) => h.histogram!)
+    )
+  ) {
+    return {
+      signal: -1,
+      indicators: [{ name: "Bearish Divergence Detected", signal: -1 }],
+    }
+  }
+
+  const signal = getCrossingSignal([st3, st15, st30])
 
   return {
     signal,
     indicators: [
-      {
-        name: `Supertrend (${shortPeriod},${shortMultiplier}) on 1m candles`,
-        signal: st1,
-      },
-      {
-        name: `Supertrend (${shortPeriod},${shortMultiplier}) on 3m candles`,
-        signal: st3,
-      },
-      {
-        name: `Supertrend (${longPeriod},${longMultiplier}) on 15m candles`,
-        signal: st15,
-      },
-      {
-        name: `Supertrend (${longPeriod},${longMultiplier}) on 30m candles`,
-        signal: st30,
-      },
-      {
-        name: `Take profit > ${pnl}$ (${takeProfitPnl})`,
-        signal: takeProfit,
-      },
-      {
-        name: `Stop loss > ${pnl}$ (${stopLossPnl})`,
-        signal: stopLoss,
-      },
+      { name: "Supertrend 3m", signal: st3 },
+      { name: "Supertrend 15m", signal: st15 },
+      { name: "Supertrend 30m", signal: st30 },
     ],
   }
 }

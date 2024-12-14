@@ -23,16 +23,17 @@ export const CANDLES_TO_FETCH: KlineIntervalV3[] = [
   "3",
   "15",
   "30",
-  // "60",
-  // "240",
+  "60",
+  "240",
 ]
 
-analyzeSymbolQueue.process(5, async (job) => {
-  const [candles3, candles15, candles30] = await Promise.all(
-    CANDLES_TO_FETCH.map((interval) =>
-      fetchKline({ symbol: job.data.symbol, interval })
+analyzeSymbolQueue.process(4, async (job) => {
+  const [candles3, candles15, candles30, candles60, candles240] =
+    await Promise.all(
+      CANDLES_TO_FETCH.map((interval) =>
+        fetchKline({ symbol: job.data.symbol, interval })
+      )
     )
-  )
 
   const { result: tickers } = await bybitRestClient.getTickers({
     category: "spot",
@@ -55,6 +56,8 @@ analyzeSymbolQueue.process(5, async (job) => {
     candles3,
     candles15,
     candles30,
+    candles60,
+    candles240,
   })
 
   return {

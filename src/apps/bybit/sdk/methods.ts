@@ -21,7 +21,7 @@ export async function fetchKline({
     symbol,
     category: "spot",
     interval,
-    limit, // Количество свечей (ограничено API)
+    limit,
   })
 
   return res.result.list.map(klineAdapter)
@@ -46,7 +46,6 @@ export async function createOrder(opts: OrderParams) {
     ...opts,
     category: "spot",
     timeInForce: "GTC",
-    marketUnit: "quoteCoin",
   })
 
   if (retMsg.toLowerCase() !== "ok") {
@@ -59,7 +58,7 @@ export async function createOrder(opts: OrderParams) {
 export async function fetchPositions(symbol?: string) {
   const position = await bybitRestClient.getPositionInfo({
     category: "spot",
-    settleCoin: "USDT",
+    settleCoin: process.env.BASE_CURRENCY,
     symbol,
   })
 

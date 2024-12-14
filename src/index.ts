@@ -15,16 +15,24 @@ async function main() {
     console.log("NODE_ENV:", process.env.NODE_ENV)
   })
 
+  /**
+   * Покупаем только на локальном деве
+   */
   if (process.env.NODE_ENV === "development") {
     analyzeSymbolQueue.on("drained", async () => {
-      analyzeBybit()
+      if ((await analyzeSymbolQueue.count()) === 0) {
+        analyzeBybit()
+      }
     })
 
-    if ((await analyzeSymbolQueue.getActiveCount()) === 0) {
+    if ((await analyzeSymbolQueue.count()) === 0) {
       analyzeBybit()
     }
   }
 
+  /**
+   * Продаем на проде
+   */
   if (process.env.NODE_ENV === "production") {
     setInterval(checkPositionsSell, 15000)
 

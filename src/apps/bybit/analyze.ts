@@ -10,7 +10,9 @@ export async function getTrendTickers() {
   const tickers = await fetchTickers()
 
   const trending = tickers.filter(
-    (ticker) => ticker.volume24h > 1_000_000 && ticker.lastPrice > 0.05
+    (ticker) =>
+      ticker.lastPrice > 0.2 &&
+      ticker.symbol.endsWith(process.env.BASE_CURRENCY!)
   )
 
   return {
@@ -32,10 +34,6 @@ export default async function analyzeBybit() {
 }
 
 analyzeSymbolQueue.on("completed", async (job) => {
-  if (job.returnvalue.signal === 1) {
-    buy(job.returnvalue.symbol)
-  }
-
   const { error } = await supabase
     .from("analysis")
     .insert(snakecaseKeys(job.returnvalue, { deep: false }))
@@ -43,6 +41,24 @@ analyzeSymbolQueue.on("completed", async (job) => {
   if (error) {
     console.error(job, error)
     throw error
+  }
+
+  if (job.returnvalue.signal === 1) {
+    const order = await buy(job.returnvalue.symbol)
+
+    if (order) {
+      const { error } = await supabase.from("buys").insert({
+        symbol: job.returnvalue.symbol,
+        order_id: order.orderId,
+        qty: order.qty,
+        indicators: job.returnvalue.indicators,
+        new_trend: job.returnvalue.newTrend,
+      })
+
+      if (error) {
+        console.log("Error in saving buy", error)
+      }
+    }
   }
 
   io.emit("job-count", await analyzeSymbolQueue.count())

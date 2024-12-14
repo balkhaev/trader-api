@@ -23,12 +23,12 @@ const INDICATOR_WEIGHTS = {
 const safeDivide = (numerator: number, denominator: number): number =>
   denominator !== 0 ? numerator / denominator : 0
 
-type CandlesOpts = {
+type Opts = {
   analysis: Analyze
   ticker: Ticker
 }
 
-export function ratingAnalyze({ analysis, ticker }: CandlesOpts): number {
+export function ratingAnalyze({ analysis, ticker }: Opts): number {
   const currentPrice = ticker.lastPrice
 
   const indicators: IndicatorFunction[] = [

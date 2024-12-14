@@ -84,6 +84,36 @@ export type Database = {
         }
         Relationships: []
       }
+      buys: {
+        Row: {
+          created_at: string | null
+          id: number
+          indicators: Json
+          new_trend: boolean | null
+          order_id: string
+          qty: string
+          symbol: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: never
+          indicators: Json
+          new_trend?: boolean | null
+          order_id: string
+          qty: string
+          symbol: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: never
+          indicators?: Json
+          new_trend?: boolean | null
+          order_id?: string
+          qty?: string
+          symbol?: string
+        }
+        Relationships: []
+      }
       news: {
         Row: {
           content: string
@@ -129,7 +159,6 @@ export type Database = {
           created_at: string | null
           id: number
           indicators: Json
-          new_trend: boolean | null
           symbol: string
           unrealised_pnl: string
         }
@@ -141,7 +170,6 @@ export type Database = {
           created_at?: string | null
           id?: never
           indicators: Json
-          new_trend?: boolean | null
           symbol: string
           unrealised_pnl: string
         }
@@ -153,48 +181,8 @@ export type Database = {
           created_at?: string | null
           id?: never
           indicators?: Json
-          new_trend?: boolean | null
           symbol?: string
           unrealised_pnl?: string
-        }
-        Relationships: []
-      }
-      tickers_spot: {
-        Row: {
-          high_price_24h: number
-          id: number
-          last_price: number
-          low_price_24h: number
-          prev_price_24h: number
-          price_24h_pcnt: number
-          symbol: string
-          turnover_24h: number
-          usd_index_price: number
-          volume_24h: number
-        }
-        Insert: {
-          high_price_24h: number
-          id?: never
-          last_price: number
-          low_price_24h: number
-          prev_price_24h: number
-          price_24h_pcnt: number
-          symbol: string
-          turnover_24h: number
-          usd_index_price: number
-          volume_24h: number
-        }
-        Update: {
-          high_price_24h?: number
-          id?: never
-          last_price?: number
-          low_price_24h?: number
-          prev_price_24h?: number
-          price_24h_pcnt?: number
-          symbol?: string
-          turnover_24h?: number
-          usd_index_price?: number
-          volume_24h?: number
         }
         Relationships: []
       }

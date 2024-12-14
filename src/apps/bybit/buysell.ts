@@ -11,9 +11,7 @@ import {
   hasWaitBuySymbol,
   rmWaitBuySymbol,
 } from "./state"
-import { LIMIT_BUYS } from "./consts"
-
-const USDT_QTY = 3
+import { LIMIT_BUYS, USDT_QTY } from "./consts"
 
 export const buy = async (symbol: string) => {
   if (hasWaitBuySymbol(symbol)) return
@@ -34,10 +32,17 @@ export const buy = async (symbol: string) => {
     return
   }
 
-  console.log(symbol, "buying...")
-
+  const instrument = await fetchInstrumentInfo(symbol)
   const currentPrice = await fetchCurrentPrice(symbol)
   const qty = (USDT_QTY / currentPrice).toFixed(2)
+
+  if (instrument.lotSizeFilter.minOrderQty > qty) {
+    console.log("too small qty", { instrument, qty, currentPrice })
+    rmWaitBuySymbol(symbol)
+    return null
+  }
+
+  console.log(symbol, qty, "buying for", currentPrice)
 
   try {
     const order = await createOrder({
@@ -45,12 +50,16 @@ export const buy = async (symbol: string) => {
       side: "Buy",
       orderType: "Market",
       qty,
+      marketUnit: "baseCoin",
     })
 
     rmWaitBuySymbol(symbol)
     io.emit("buyed")
 
-    return order
+    return {
+      orderId: order.orderId,
+      qty,
+    }
   } catch (e) {
     console.log(e)
     rmWaitBuySymbol(symbol)
