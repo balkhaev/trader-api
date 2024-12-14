@@ -22,3 +22,7 @@ export function adaptKeys<T extends Record<string, any>>(
 
   return result as SnakeCasedKeys<T> // Cast the result to the correct type
 }
+
+export function isObject(obj: any): obj is Record<string, any> {
+  return typeof obj === "object" && !Array.isArray(obj)
+}

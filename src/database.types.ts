@@ -21,12 +21,14 @@ export type Database = {
           id: number
           indicators: Json | null
           last_price: number
+          long: Json
           macd: Json | null
           momentum: number | null
           obv: number | null
           open_interest: number | null
           rating: number | null
           rsi: number | null
+          short: Json
           signal: number | null
           sma: number | null
           stochastic_rsi: Json | null
@@ -45,12 +47,14 @@ export type Database = {
           id?: never
           indicators?: Json | null
           last_price: number
+          long: Json
           macd?: Json | null
           momentum?: number | null
           obv?: number | null
           open_interest?: number | null
           rating?: number | null
           rsi?: number | null
+          short: Json
           signal?: number | null
           sma?: number | null
           stochastic_rsi?: Json | null
@@ -69,12 +73,14 @@ export type Database = {
           id?: never
           indicators?: Json | null
           last_price?: number
+          long?: Json
           macd?: Json | null
           momentum?: number | null
           obv?: number | null
           open_interest?: number | null
           rating?: number | null
           rsi?: number | null
+          short?: Json
           signal?: number | null
           sma?: number | null
           stochastic_rsi?: Json | null
@@ -86,31 +92,37 @@ export type Database = {
       }
       buys: {
         Row: {
-          created_at: string | null
+          coin: string
+          created_at: string
           id: number
           indicators: Json
-          new_trend: boolean | null
           order_id: string
           qty: string
+          selled: boolean
           symbol: string
+          type: string
         }
         Insert: {
-          created_at?: string | null
+          coin: string
+          created_at?: string
           id?: never
           indicators: Json
-          new_trend?: boolean | null
           order_id: string
           qty: string
+          selled?: boolean
           symbol: string
+          type: string
         }
         Update: {
-          created_at?: string | null
+          coin?: string
+          created_at?: string
           id?: never
           indicators?: Json
-          new_trend?: boolean | null
           order_id?: string
           qty?: string
+          selled?: boolean
           symbol?: string
+          type?: string
         }
         Relationships: []
       }
@@ -159,8 +171,8 @@ export type Database = {
           created_at: string | null
           id: number
           indicators: Json
+          pnl: number
           symbol: string
-          unrealised_pnl: string
         }
         Insert: {
           candles1: Json
@@ -170,8 +182,8 @@ export type Database = {
           created_at?: string | null
           id?: never
           indicators: Json
+          pnl: number
           symbol: string
-          unrealised_pnl: string
         }
         Update: {
           candles1?: Json
@@ -181,8 +193,8 @@ export type Database = {
           created_at?: string | null
           id?: never
           indicators?: Json
+          pnl?: number
           symbol?: string
-          unrealised_pnl?: string
         }
         Relationships: []
       }
@@ -204,12 +216,14 @@ export type Database = {
           id: number
           indicators: Json | null
           last_price: number
+          long: Json
           macd: Json | null
           momentum: number | null
           obv: number | null
           open_interest: number | null
           rating: number | null
           rsi: number | null
+          short: Json
           signal: number | null
           sma: number | null
           stochastic_rsi: Json | null

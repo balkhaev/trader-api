@@ -37,16 +37,30 @@ export default async function analyzeBybit() {
 }
 
 analyzeSymbolQueue.on("completed", async (job) => {
-  const { error } = await supabase
+  const { error, data } = await supabase
     .from("analysis")
     .insert(snakecaseKeys(job.returnvalue, { deep: false }))
+    .select()
+    .single()
 
   if (error) {
     console.error("in completed", error)
-    throw error
+    return
   }
 
-  if (job.returnvalue.signal === 1) {
+  const long =
+    typeof data.long === "object" && !Array.isArray(data.long)
+      ? data.long
+      : null
+
+  const short =
+    typeof data.short === "object" && !Array.isArray(data.short)
+      ? data.short
+      : null
+
+  const approve = long?.signal === 1 // || short?.signal === 1
+
+  if (approve) {
     const order = await buy(job.returnvalue.symbol)
 
     if (order) {
@@ -55,7 +69,8 @@ analyzeSymbolQueue.on("completed", async (job) => {
         order_id: order.orderId,
         qty: order.qty,
         indicators: job.returnvalue.indicators,
-        new_trend: job.returnvalue.newTrend,
+        type: long.signal === 1 ? "long" : "short",
+        coin: job.returnvalue.symbol.slice(0, -4),
       })
 
       if (error) {

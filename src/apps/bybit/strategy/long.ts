@@ -1,80 +1,19 @@
-import { ExecutionV5, WalletBalanceV5Coin } from "bybit-api"
-import { Analyze, Candle } from "../../../types"
+import { ExecutionV5 } from "bybit-api"
+import { Analyze, Candle, Signal } from "../../../types"
 import { getSupertrendSignal } from "../../blackbox/signals/supertrend"
 import { getCrossingSignal } from "../../blackbox/strategies"
 import { BUY_SIGNAL_CANDLES_LIMIT } from "../consts"
-import { ATR, MACD } from "technicalindicators"
+import { MACD } from "technicalindicators"
 import { MetaSignal } from "../types"
 import { addMinutes } from "date-fns"
+import {
+  isBullishDivergence,
+  isBullishEngulfing,
+} from "../../blackbox/patterns"
+import { isAboveEMA } from "../../blackbox/indicators/ema"
+import { isVolumeIncreasing } from "../../blackbox/indicators/volume"
 
-function isBullishEngulfing(candles: Candle[]): boolean {
-  const [prev, last] = candles.slice(-2)
-  return (
-    prev.close < prev.open &&
-    last.close > last.open &&
-    last.close > prev.open &&
-    last.open < prev.close
-  )
-}
-
-function isAboveEMA(candles: Candle[], period: number): boolean {
-  const ema =
-    candles.slice(-period).reduce((sum, candle) => sum + candle.close, 0) /
-    period
-  return candles[candles.length - 1].close > ema
-}
-
-function calculateATR(candles: Candle[]): number {
-  return (
-    ATR.calculate({
-      low: candles.map((c) => c.low),
-      high: candles.map((c) => c.high),
-      close: candles.map((c) => c.close),
-      period: 10,
-    }).pop() || 0
-  )
-}
-
-function isVolumeIncreasing(candles: Candle[]): boolean {
-  const [prev, last] = candles.slice(-2)
-  return last.volume > prev.volume
-}
-
-function isBullishDivergence(candles: Candle[], macdHist: number[]): boolean {
-  const prices = candles.map((c) => c.close)
-  const lastPrice = prices[prices.length - 1]
-  const prevPrice = prices[prices.length - 2]
-  const lastMACD = macdHist[macdHist.length - 1]
-  const prevMACD = macdHist[macdHist.length - 2]
-
-  return (
-    lastPrice > prevPrice && // Цена делает более высокие минимумы
-    lastMACD < prevMACD // MACD гистограмма делает более низкие минимумы
-  )
-}
-
-function isBearishEngulfing(candles: Candle[]): boolean {
-  const [prev, last] = candles.slice(-2)
-  return (
-    prev.close > prev.open &&
-    last.close < last.open &&
-    last.close < prev.open &&
-    last.open > prev.close
-  )
-}
-
-function isBearishDivergence(candles: Candle[], macdHist: number[]): boolean {
-  const prices = candles.map((c) => c.close)
-  const lastPrice = prices[prices.length - 1]
-  const prevPrice = prices[prices.length - 2]
-  const lastMACD = macdHist[macdHist.length - 1]
-  const prevMACD = macdHist[macdHist.length - 2]
-
-  return (
-    lastPrice < prevPrice && // Цена делает более низкие максимумы
-    lastMACD > prevMACD // MACD гистограмма делает более высокие максимумы
-  )
-}
+const boolToSignal = (value: boolean): Signal => (value ? 1 : 0)
 
 type SignalOpts = {
   analysis: Analyze
@@ -85,7 +24,7 @@ type SignalOpts = {
   candles240: Candle[]
 }
 
-export function buySignal({
+export function buyLongSignal({
   analysis,
   currentPrice,
   candles3,
@@ -99,6 +38,7 @@ export function buySignal({
     BUY_SIGNAL_CANDLES_LIMIT,
     2
   )
+
   if (
     !globalTrend ||
     !analysis.macd?.histogram ||
@@ -149,117 +89,59 @@ export function buySignal({
     SimpleMASignal: false,
   })
 
-  if (
-    isBullishDivergence(
-      candles30,
-      macd.map((m) => m.histogram!)
-    ) &&
-    isVolumeIncreasing(candles30) &&
-    analysis.adx.adx > 25 &&
-    isAboveEMA(candles240, 200) &&
-    analysis.rsi > 30 &&
-    analysis.stochasticRsi.stochRSI < 20 &&
-    isBullishEngulfing(candles15)
-  ) {
-    return {
-      signal: 1,
-      indicators: [
-        { name: "Bullish Divergence Detected", signal: 1 },
-        { name: "Volume Increasing", signal: 1 },
-        { name: "ADX Confirms Trend", signal: 1, data: analysis.adx.adx },
-        { name: "EMA Trend Confirms", signal: 1 },
-        { name: "RSI Oversold", signal: 1, data: analysis.rsi },
-        {
-          name: "Stochastic RSI Oversold",
-          signal: 1,
-          data: analysis.stochasticRsi.stochRSI,
-        },
-        { name: "Bullish Engulfing Pattern", signal: 1 },
-      ],
-    }
+  const bullishDivergence = isBullishDivergence(
+    candles30,
+    macd.map((m) => m.histogram!)
+  )
+
+  const volumeIncreasing = isVolumeIncreasing(candles30)
+  const adxPower = analysis.adx.adx > 25
+  const aboveEMA = isAboveEMA(candles240, 200).above
+  const notWeakRSI = analysis.rsi > 30
+  const stochiRSI = analysis.stochasticRsi.stochRSI < 20
+  const bullishEngulfing = isBullishEngulfing(candles15)
+
+  return {
+    signal: boolToSignal(
+      bullishDivergence &&
+        volumeIncreasing &&
+        adxPower &&
+        aboveEMA &&
+        notWeakRSI &&
+        stochiRSI
+      // && bullishEngulfing
+    ),
+    indicators: [
+      {
+        name: "Bullish Divergence Detected",
+        signal: boolToSignal(bullishDivergence),
+      },
+      { name: "Volume Increasing", signal: boolToSignal(volumeIncreasing) },
+      {
+        name: "ADX Confirms Trend",
+        signal: boolToSignal(adxPower),
+        data: analysis.adx.adx,
+      },
+      { name: "EMA Trend Confirms", signal: boolToSignal(aboveEMA) },
+      {
+        name: "RSI Oversold",
+        signal: boolToSignal(notWeakRSI),
+        data: analysis.rsi,
+      },
+      {
+        name: "Stochastic RSI Oversold",
+        signal: boolToSignal(stochiRSI),
+        data: analysis.stochasticRsi.stochRSI,
+      },
+      {
+        name: "Bullish Engulfing Pattern",
+        signal: boolToSignal(bullishEngulfing),
+      },
+    ],
   }
-
-  // if (
-  //   isBullishDivergence(
-  //     candles30,
-  //     macd.map((m) => m.histogram!)
-  //   ) &&
-  //   analysis.adx.adx > 25 &&
-  //   analysis.rsi > 30 &&
-  //   isAboveEMA(candles240, 200)
-  // ) {
-  //   return {
-  //     signal: 1,
-  //     indicators: [
-  //       { name: "Bullish Divergence Detected", signal: 1 },
-  //       { name: "ADX > 25", signal: 1, data: analysis.adx.adx },
-  //       { name: "rsi > 30", signal: 1, data: analysis.rsi },
-  //       { name: "Above 200 EMA", signal: 1 },
-  //     ],
-  //   }
-  // }
-
-  // const atr = calculateATR(candles30)
-  // const takeProfitLevel = currentPrice + atr * 3
-  // const stopLossLevel = currentPrice - atr * 2
-
-  // if (analysis.stochasticRsi.stochRSI <= 20 && isBullishEngulfing(candles15)) {
-  //   return {
-  //     signal: 1,
-  //     indicators: [
-  //       {
-  //         name: "Bullish Engulfing & Stochastic RSI Oversold",
-  //         signal: 1,
-  //         data: analysis.stochasticRsi.stochRSI,
-  //       },
-  //       { name: "ATR Take Profit", data: takeProfitLevel },
-  //       { name: "ATR Stop Loss", data: stopLossLevel },
-  //     ],
-  //   }
-  // }
-
-  // if (analysis.stochasticRsi.stochRSI > 80) {
-  //   return {
-  //     signal: 0,
-  //     indicators: [
-  //       {
-  //         name: "Stochastic RSI Overbought",
-  //         signal: 0,
-  //         data: analysis.stochasticRsi.stochRSI,
-  //       },
-  //     ],
-  //   }
-  // }
-
-  // if (
-  //   analysis.stochasticRsi.stochRSI > 40 &&
-  //   analysis.adx.adx >= 25 &&
-  //   analysis.macd.histogram > 0
-  // ) {
-  //   return {
-  //     signal: 1,
-  //     indicators: [
-  //       {
-  //         name: "Stoch RSI",
-  //         signal: 1,
-  //         data: analysis.stochasticRsi.stochRSI,
-  //       },
-  //       { name: "ADX >= 25", signal: 1, data: analysis.adx.adx },
-  //       {
-  //         name: "MACD Histogram > 0",
-  //         signal: 1,
-  //         data: analysis.macd.histogram,
-  //       },
-  //       { name: "ATR Take Profit", data: takeProfitLevel },
-  //       { name: "ATR Stop Loss", data: stopLossLevel },
-  //     ],
-  //   }
-  // }
-
-  return { signal: 0, indicators: [{ name: "No Valid Signal", signal: 0 }] }
 }
 
-export function sellSignal(
+export function sellLongSignal(
   trade: ExecutionV5,
   currentPrice: number,
   candles1: Candle[],
@@ -319,7 +201,7 @@ export function sellSignal(
   // }
 
   const buyedTime = parseInt(trade.execTime)
-  const stayTime = addMinutes(buyedTime, 15).getTime()
+  const stayTime = addMinutes(buyedTime, 30).getTime()
 
   if (stayTime > Date.now()) {
     return {
