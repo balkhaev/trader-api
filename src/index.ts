@@ -13,6 +13,8 @@ async function main() {
   server.listen(PORT, () => {
     console.log("Сервер запущен на порту", PORT)
     console.log("NODE_ENV:", process.env.NODE_ENV)
+    console.log("BASE_CURRENCY:", process.env.BASE_CURRENCY)
+    console.log("REDIS_HOST:", process.env.REDIS_HOST)
   })
 
   /**
@@ -35,8 +37,6 @@ async function main() {
    */
   if (process.env.NODE_ENV === "production") {
     setInterval(checkPositionsSell, 15000)
-
-    console.log("prod check sell")
   }
 }
 
