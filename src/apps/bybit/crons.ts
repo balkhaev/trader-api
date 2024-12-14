@@ -1,7 +1,7 @@
 import { fetchCurrentPrice, fetchKline, fetchTradeHistory } from "./sdk/methods"
 import { sell } from "./buysell"
 import { sellLongSignal } from "./strategy/long"
-import { format } from "date-fns"
+import { differenceInMinutes, format } from "date-fns"
 import { KlineIntervalV3 } from "bybit-api"
 import { supabase } from "../../lib/supabase"
 import { sellShortSignal } from "./strategy/short"
@@ -26,23 +26,16 @@ export const checkPositionsSell = async () => {
   for (const buy of buys) {
     const symbol = buy.symbol
     const currentPrice = await fetchCurrentPrice(symbol)
-    const trades = await fetchTradeHistory(symbol)
-    const lastBuy = trades.reverse().find((t) => t.side === "Buy")
     const [candles1, candles3, candles15, candles30] = await Promise.all(
       CANDLES_TO_FETCH_FOR_SELL.map((interval) =>
         fetchKline({ symbol, interval })
       )
     )
 
-    if (!lastBuy) {
-      console.log("WHERES LAST TRADE?!", symbol, trades)
-      return
-    }
-
     const sellSignal = buy.type === "short" ? sellShortSignal : sellLongSignal
 
     const { signal, indicators } = sellSignal(
-      lastBuy,
+      buy,
       currentPrice,
       candles1,
       candles3,
@@ -50,7 +43,9 @@ export const checkPositionsSell = async () => {
       candles30
     )
 
-    console.log(symbol, indicators)
+    if (differenceInMinutes(new Date(), buy.created_at) > 5) {
+      return
+    }
 
     if (signal === -1) {
       try {
@@ -69,8 +64,8 @@ export const checkPositionsSell = async () => {
         console.log("!UPDATE ERROR!", updateError)
       }
 
-      const qty = parseFloat(lastBuy.orderQty)
-      const tradePrice = parseFloat(lastBuy.orderPrice)
+      const qty = parseFloat(buy.qty)
+      const tradePrice = buy.price
       const pnl = qty * (currentPrice - tradePrice)
 
       const { error } = await supabase.from("sells").insert({

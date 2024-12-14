@@ -1,4 +1,3 @@
-import { ExecutionV5 } from "bybit-api"
 import { Analyze, Candle, Signal } from "../../../types"
 import { getSupertrendSignal } from "../../blackbox/signals/supertrend"
 import { getCrossingSignal } from "../../blackbox/strategies"
@@ -12,6 +11,7 @@ import {
 } from "../../blackbox/patterns"
 import { isAboveEMA } from "../../blackbox/indicators/ema"
 import { isVolumeIncreasing } from "../../blackbox/indicators/volume"
+import { Tables } from "../../../database.types"
 
 const boolToSignal = (value: boolean): Signal => (value ? 1 : 0)
 
@@ -142,7 +142,7 @@ export function buyLongSignal({
 }
 
 export function sellLongSignal(
-  trade: ExecutionV5,
+  buy: Tables<"buys">,
   currentPrice: number,
   candles1: Candle[],
   candles3: Candle[],
@@ -200,7 +200,7 @@ export function sellLongSignal(
   //   }
   // }
 
-  const buyedTime = parseInt(trade.execTime)
+  const buyedTime = parseInt(buy.created_at)
   const stayTime = addMinutes(buyedTime, 30).getTime()
 
   if (stayTime > Date.now()) {

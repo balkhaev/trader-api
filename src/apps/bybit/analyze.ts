@@ -4,6 +4,7 @@ import { buy } from "./buysell"
 import { analyzeSymbolQueue } from "./queue"
 import { fetchCurrentPrice, fetchTickers } from "./sdk/methods"
 import { io } from "../../server"
+import { differenceInMinutes } from "date-fns"
 
 export async function getTrendTickers() {
   const tickers = await fetchTickers()
@@ -63,6 +64,22 @@ analyzeSymbolQueue.on("completed", async (job) => {
   const symbol = job.returnvalue.symbol
 
   if (approve) {
+    const { data: lastBuy } = await supabase
+      .from("buys")
+      .select("created_at,selled")
+      .order("created_at", { ascending: false })
+      .eq("symbol", symbol)
+      .single()
+
+    if (lastBuy) {
+      if (
+        !lastBuy.selled ||
+        differenceInMinutes(new Date(), lastBuy.created_at) < 5
+      ) {
+        return
+      }
+    }
+
     const order = await buy(symbol, isLongSignal ? 3 : 1.6)
 
     if (order) {

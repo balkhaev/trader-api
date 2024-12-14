@@ -12,6 +12,7 @@ import {
   rmWaitBuySymbol,
 } from "./state"
 import { LIMIT_BUYS } from "./consts"
+import { supabase } from "../../lib/supabase"
 
 export const buy = async (symbol: string, usdt: number) => {
   if (hasWaitBuySymbol(symbol)) return
@@ -73,20 +74,23 @@ export const sell = async (coin: string) => {
   console.log("try sell", coin)
 
   const symbol = coin + process.env.BASE_CURRENCY
-  const buyedCoins = await fetchBuyedCoins()
-  const buyedCoin = buyedCoins.find((p) => p.coin === coin)
+  const { data: buy } = await supabase
+    .from("buys")
+    .select()
+    .eq("coin", coin)
+    .eq("selled", false)
+    .limit(1)
+    .single()
 
-  if (!buyedCoin) {
+  if (!buy) {
     throw new Error("Нет открытой позиции для продажи.")
   }
-
-  const qty = buyedCoin.availableToWithdraw // Текущее количество монет
 
   const order = await createOrder({
     symbol,
     side: "Sell",
     orderType: "Market",
-    qty,
+    qty: buy.qty,
     marketUnit: "baseCoin",
   })
 

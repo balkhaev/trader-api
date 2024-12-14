@@ -33,11 +33,9 @@ async function main() {
   }
 
   /**
-   * Продаем на проде
+   * Продаем везде
    */
-  if (process.env.NODE_ENV === "production") {
-    setInterval(checkPositionsSell, 15000)
-  }
+  setInterval(checkPositionsSell, 15000)
 }
 
 main().catch((err) => {

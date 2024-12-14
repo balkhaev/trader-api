@@ -7,6 +7,7 @@ import { MetaSignal } from "../types"
 import { isAboveEMA } from "../../blackbox/indicators/ema"
 import { isVolumeIncreasing } from "../../blackbox/indicators/volume"
 import { ATR } from "technicalindicators"
+import { Tables } from "../../../database.types"
 
 function calculateATR(candles: Candle[]): number {
   return (
@@ -92,14 +93,13 @@ export function buyShortSignal({
 }
 
 export function sellShortSignal(
-  trade: ExecutionV5,
+  buy: Tables<"buys">,
   currentPrice: number,
   candles1: Candle[],
   candles3: Candle[]
 ): MetaSignal {
-  const qty = parseFloat(trade.orderQty)
-  const tradePrice = parseFloat(trade.orderPrice)
-  const pnl = qty * (currentPrice - tradePrice)
+  const qty = parseFloat(buy.qty)
+  const pnl = qty * (currentPrice - buy.price)
   const takeProfitPnl = 0.2
   const stopLossPnl = -0.5
   const takeProfit = pnl > takeProfitPnl
@@ -114,16 +114,18 @@ export function sellShortSignal(
     }
   }
 
-  const { signal: st1 } = getSupertrendSignal(currentPrice, candles1, 10, 2)
+  const { signal: st1 } = getSupertrendSignal(currentPrice, candles1, 10, 1)
+  const { signal: st1f2 } = getSupertrendSignal(currentPrice, candles1, 10, 2)
   const { signal: st3 } = getSupertrendSignal(currentPrice, candles3, 10, 2)
 
-  const signal = getCrossingSignal([st1, st3])
+  const signal = getCrossingSignal([st1, st1f2, st3])
 
   return {
     signal,
     indicators: [
-      { name: "Supertrend 1m", signal: st1 },
-      { name: "Supertrend 3m", signal: st3 },
+      { name: "Supertrend 1m (10,1)", signal: st1 },
+      { name: "Supertrend 1m (10,2)", signal: st1f2 },
+      { name: "Supertrend 3m (10,2)", signal: st3 },
     ],
   }
 }
