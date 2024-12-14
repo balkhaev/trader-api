@@ -16,6 +16,8 @@ export const checkPositionsSell = async () => {
     return
   }
 
+  console.log("CHECK", buyedCoins.length)
+
   for (const buyedCoin of buyedCoins) {
     const symbol = buyedCoin.coin + process.env.BASE_CURRENCY!
     const currentPrice = await fetchCurrentPrice(symbol)
@@ -33,6 +35,8 @@ export const checkPositionsSell = async () => {
       candles15,
       candles30
     )
+
+    console.log(buyedCoin.coin, indicators)
 
     if (signal === -1) {
       try {

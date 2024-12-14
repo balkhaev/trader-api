@@ -113,7 +113,8 @@ export function buySignal({
     !analysis.macd?.histogram ||
     !analysis.stochasticRsi ||
     !analysis.adx?.adx ||
-    !analysis.macd.histogram
+    !analysis.macd.histogram ||
+    !analysis.rsi
   ) {
     return { signal: 0, indicators: [{ name: "Insufficient Data", signal: 0 }] }
   }
@@ -161,11 +162,49 @@ export function buySignal({
     isBullishDivergence(
       candles30,
       macd.map((m) => m.histogram!)
-    )
+    ) &&
+    isVolumeIncreasing(candles30) &&
+    analysis.adx.adx > 25 &&
+    isAboveEMA(candles240, 200) &&
+    analysis.rsi > 30 &&
+    analysis.stochasticRsi.stochRSI < 20 &&
+    isBullishEngulfing(candles15)
   ) {
     return {
       signal: 1,
-      indicators: [{ name: "Bullish Divergence Detected", signal: 1 }],
+      indicators: [
+        { name: "Bullish Divergence Detected", signal: 1 },
+        { name: "Volume Increasing", signal: 1 },
+        { name: "ADX Confirms Trend", signal: 1, data: analysis.adx.adx },
+        { name: "EMA Trend Confirms", signal: 1 },
+        { name: "RSI Oversold", signal: 1, data: analysis.rsi },
+        {
+          name: "Stochastic RSI Oversold",
+          signal: 1,
+          data: analysis.stochasticRsi.stochRSI,
+        },
+        { name: "Bullish Engulfing Pattern", signal: 1 },
+      ],
+    }
+  }
+
+  if (
+    isBullishDivergence(
+      candles30,
+      macd.map((m) => m.histogram!)
+    ) &&
+    analysis.adx.adx > 25 &&
+    analysis.rsi > 30 &&
+    isAboveEMA(candles240, 200)
+  ) {
+    return {
+      signal: 1,
+      indicators: [
+        { name: "Bullish Divergence Detected", signal: 1 },
+        { name: "ADX > 25", signal: 1, data: analysis.adx.adx },
+        { name: "rsi > 30", signal: 1, data: analysis.rsi },
+        { name: "Above 200 EMA", signal: 1 },
+      ],
     }
   }
 
@@ -182,8 +221,8 @@ export function buySignal({
           signal: 1,
           data: analysis.stochasticRsi.stochRSI,
         },
-        { name: "ATR Take Profit", signal: takeProfitLevel },
-        { name: "ATR Stop Loss", signal: stopLossLevel },
+        { name: "ATR Take Profit", data: takeProfitLevel },
+        { name: "ATR Stop Loss", data: stopLossLevel },
       ],
     }
   }
@@ -210,12 +249,18 @@ export function buySignal({
       signal: 1,
       indicators: [
         {
-          name: "Strong Trend Confirmed",
+          name: "Stoch RSI",
           signal: 1,
           data: analysis.stochasticRsi.stochRSI,
         },
-        { name: "ATR Take Profit", signal: takeProfitLevel },
-        { name: "ATR Stop Loss", signal: stopLossLevel },
+        { name: "ADX >= 25", signal: 1, data: analysis.adx.adx },
+        {
+          name: "MACD Histogram > 0",
+          signal: 1,
+          data: analysis.macd.histogram,
+        },
+        { name: "ATR Take Profit", data: takeProfitLevel },
+        { name: "ATR Stop Loss", data: stopLossLevel },
       ],
     }
   }

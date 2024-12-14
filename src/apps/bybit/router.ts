@@ -107,4 +107,12 @@ router.get("/coins", async (req, res) => {
   res.json(data)
 })
 
+router.post("/clear", async (req, res) => {
+  await supabase.from("analysis").delete().neq("adx", 0)
+
+  res.json({
+    status: "ok",
+  })
+})
+
 export default router
