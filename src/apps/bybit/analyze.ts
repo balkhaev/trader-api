@@ -2,9 +2,8 @@ import snakecaseKeys from "snakecase-keys"
 import { supabase } from "../../lib/supabase"
 import { buy } from "./buysell"
 import { analyzeSymbolQueue } from "./queue"
-import { fetchTickers } from "./sdk/methods"
+import { fetchCurrentPrice, fetchTickers } from "./sdk/methods"
 import { io } from "../../server"
-import "./crons"
 
 export async function getTrendTickers() {
   const tickers = await fetchTickers()
@@ -58,19 +57,23 @@ analyzeSymbolQueue.on("completed", async (job) => {
       ? data.short
       : null
 
-  const approve = long?.signal === 1 // || short?.signal === 1
+  const isLongSignal = long?.signal === 1
+  const approve = isLongSignal || short?.signal === 1
+  const symbol = job.returnvalue.symbol
 
   if (approve) {
-    const order = await buy(job.returnvalue.symbol)
+    const order = await buy(symbol, isLongSignal ? 2 : 1)
 
     if (order) {
+      const currentPrice = await fetchCurrentPrice(symbol)
       const { error } = await supabase.from("buys").insert({
-        symbol: job.returnvalue.symbol,
+        price: currentPrice,
+        symbol: symbol,
         order_id: order.orderId,
         qty: order.qty,
         indicators: job.returnvalue.indicators,
-        type: long.signal === 1 ? "long" : "short",
-        coin: job.returnvalue.symbol.slice(0, -4),
+        type: long?.signal === 1 ? "long" : "short",
+        coin: symbol.slice(0, -4),
       })
 
       if (error) {

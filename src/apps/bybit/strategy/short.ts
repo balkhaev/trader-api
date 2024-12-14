@@ -106,6 +106,10 @@ export function buyShortSignal({
         name: "Supertrend 240 min",
         signal: st240min,
       },
+      {
+        name: "EMA & ATR & PULLBACK",
+        signal: 1,
+      },
     ],
   }
 }

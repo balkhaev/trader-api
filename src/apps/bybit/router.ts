@@ -5,7 +5,6 @@ import { bybitRestClient } from "./sdk/clients"
 import express from "express"
 import { listenBybit, unlistenBybit } from "./websocket"
 import { analyzeSymbolQueue } from "./queue"
-import { fetchBuyedCoins } from "./sdk/methods"
 
 const router = express.Router()
 
@@ -101,10 +100,13 @@ router.post("/market/:symbol/unlisten", async (req, res) => {
   })
 })
 
-router.get("/coins", async (req, res) => {
-  const data = await fetchBuyedCoins()
+router.get("/buys", async (req, res) => {
+  const { data } = await supabase.from("buys").select().eq("selled", false)
 
-  res.json(data)
+  res.json({
+    status: "ok",
+    result: data,
+  })
 })
 
 router.post("/clear", async (req, res) => {

@@ -60,6 +60,15 @@ export const checkPositionsSell = async () => {
         return
       }
 
+      const { error: updateError } = await supabase
+        .from("buys")
+        .update({ selled: true })
+        .eq("id", buy.id)
+
+      if (updateError) {
+        console.log("!UPDATE ERROR!", updateError)
+      }
+
       const qty = parseFloat(lastSellTrade.orderQty)
       const tradePrice = parseFloat(lastSellTrade.orderPrice)
       const pnl = qty * (currentPrice - tradePrice)

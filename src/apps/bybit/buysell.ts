@@ -11,12 +11,12 @@ import {
   hasWaitBuySymbol,
   rmWaitBuySymbol,
 } from "./state"
-import { LIMIT_BUYS, USDT_QTY } from "./consts"
+import { LIMIT_BUYS } from "./consts"
 
-export const buy = async (symbol: string) => {
+export const buy = async (symbol: string, usdt: number) => {
   if (hasWaitBuySymbol(symbol)) return
 
-  const coin = symbol.replace(process.env.BASE_CURRENCY!, "")
+  const coin = symbol.slice(0, -process.env.BASE_CURRENCY!.length)
 
   addWaitBuySymbol(symbol)
 
@@ -35,7 +35,7 @@ export const buy = async (symbol: string) => {
 
   const instrument = await fetchInstrumentInfo(symbol)
   const currentPrice = await fetchCurrentPrice(symbol)
-  const qty = (USDT_QTY / currentPrice).toFixed(2)
+  const qty = (usdt / currentPrice).toFixed(2)
 
   if (instrument.lotSizeFilter.minOrderQty > qty) {
     console.log("too small qty", { instrument, qty, currentPrice })

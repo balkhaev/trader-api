@@ -97,6 +97,7 @@ export type Database = {
           id: number
           indicators: Json
           order_id: string
+          price: number
           qty: string
           selled: boolean
           symbol: string
@@ -108,6 +109,7 @@ export type Database = {
           id?: never
           indicators: Json
           order_id: string
+          price: number
           qty: string
           selled?: boolean
           symbol: string
@@ -119,46 +121,11 @@ export type Database = {
           id?: never
           indicators?: Json
           order_id?: string
+          price?: number
           qty?: string
           selled?: boolean
           symbol?: string
           type?: string
-        }
-        Relationships: []
-      }
-      news: {
-        Row: {
-          content: string
-          id: number
-          market_reaction: string | null
-          price_change: number | null
-          published_at: string | null
-          sentiment_score: number | null
-          title: string
-          trading_volume: number | null
-          volatility_index: number | null
-        }
-        Insert: {
-          content: string
-          id?: never
-          market_reaction?: string | null
-          price_change?: number | null
-          published_at?: string | null
-          sentiment_score?: number | null
-          title: string
-          trading_volume?: number | null
-          volatility_index?: number | null
-        }
-        Update: {
-          content?: string
-          id?: never
-          market_reaction?: string | null
-          price_change?: number | null
-          published_at?: string | null
-          sentiment_score?: number | null
-          title?: string
-          trading_volume?: number | null
-          volatility_index?: number | null
         }
         Relationships: []
       }
