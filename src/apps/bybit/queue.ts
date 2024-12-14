@@ -8,7 +8,16 @@ import { ratingAnalyze } from "../blackbox"
 import { KlineIntervalV3 } from "bybit-api"
 import { buySignal } from "./signals"
 
-export const analyzeSymbolQueue = new Queue<{ symbol: string }>("bybit-analyze")
+export const analyzeSymbolQueue = new Queue<{ symbol: string }>(
+  "bybit-analyze",
+  {
+    redis: {
+      port: 6379,
+      host: process.env.REDIS_HOST,
+      password: process.env.REDIS_PASSWORD,
+    },
+  }
+)
 
 export const CANDLES_TO_FETCH: KlineIntervalV3[] = [
   "3",

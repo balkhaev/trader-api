@@ -63,7 +63,7 @@ export async function fetchPositions(symbol?: string) {
     symbol,
   })
 
-  return position.result.list
+  return position.result.list ?? []
 }
 
 export async function fetchInstrumentInfo(symbol: string) {
