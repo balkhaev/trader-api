@@ -91,3 +91,16 @@ export async function fetchBuyedCoins() {
       parseInt(el.usdValue) > 0.5
   )
 }
+
+export async function fetchTradeHistory(symbol: string) {
+  const { result } = await bybitRestClient.getExecutionList({
+    category: "spot",
+    symbol,
+  })
+
+  if (!result.list) {
+    return []
+  }
+
+  return result.list
+}

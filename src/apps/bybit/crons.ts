@@ -1,9 +1,15 @@
-import { fetchBuyedCoins, fetchCurrentPrice, fetchKline } from "./sdk/methods"
+import {
+  fetchBuyedCoins,
+  fetchCurrentPrice,
+  fetchKline,
+  fetchTradeHistory,
+} from "./sdk/methods"
 import { sell } from "./buysell"
-import { sellSignal } from "./signals"
+import { sellSignal } from "./strategy/long"
 import { format } from "date-fns"
 import { KlineIntervalV3 } from "bybit-api"
 import { supabase } from "../../lib/supabase"
+import { bybitRestClient } from "./sdk/clients"
 
 const CANDLES_TO_FETCH_FOR_SELL: KlineIntervalV3[] = ["1", "3", "15", "30"]
 
@@ -21,6 +27,8 @@ export const checkPositionsSell = async () => {
   for (const buyedCoin of buyedCoins) {
     const symbol = buyedCoin.coin + process.env.BASE_CURRENCY!
     const currentPrice = await fetchCurrentPrice(symbol)
+    const trades = await fetchTradeHistory(symbol)
+    const lastSellTrade = trades.reverse().find((t) => t.side === "Sell")
     const [candles1, candles3, candles15, candles30] = await Promise.all(
       CANDLES_TO_FETCH_FOR_SELL.map((interval) =>
         fetchKline({ symbol, interval })
@@ -28,7 +36,7 @@ export const checkPositionsSell = async () => {
     )
 
     const { signal, indicators } = sellSignal(
-      buyedCoin,
+      lastSellTrade,
       currentPrice,
       candles1,
       candles3,

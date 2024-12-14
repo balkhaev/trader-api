@@ -1,5 +1,5 @@
 import { Candle } from "../../../types"
-import { MetaSignal } from "../../bybit/signals"
+import { MetaSignal } from "../../bybit/types"
 import { supertrend } from "../indicators/supertrend"
 
 export function getSupertrendSignal(

@@ -6,7 +6,7 @@ import { tickerAdapter } from "./sdk/adapters"
 import { fetchKline } from "./sdk/methods"
 import { ratingAnalyze } from "../blackbox"
 import { KlineIntervalV3 } from "bybit-api"
-import { buySignal } from "./signals"
+import { buySignal } from "./strategy/long"
 import { getSupertrendSignal } from "../blackbox/signals/supertrend"
 
 export const analyzeSymbolQueue = new Queue<{ symbol: string }>(
