@@ -1,12 +1,27 @@
 import { configDotenv } from "dotenv"
+import { bybitRestClient } from "./apps/bybit/sdk/clients"
 
 configDotenv({ path: ".env" })
+const axios = require("axios")
 
-import { getSupertrendSignal } from "./apps/blackbox/signals/supertrend"
-import { createOrder, fetchKline } from "./apps/bybit/sdk/methods"
-import { sell } from "./apps/bybit/buysell"
+console.log("TEST")
 ;(async () => {
-  const order = await sell("ENSUSDT")
+  console.log("TEST1")
 
-  console.log(order)
+  bybitRestClient
+    .getTickers({
+      category: "spot",
+      baseCoin: "BTC",
+    })
+    .then((res) => console.log(res))
+
+  // const res2 = await axios.get("https://app.scrapingbee.com/api/v1", {
+  //   params: {
+  //     api_key:
+  //       "AZ8MWS8PXJR3VXHQ0YZZ70K34O89GUVYIN98VMF81CQ6ZFVL1RP3WJPMCK0IG4PQ8JUF5Z0OZ979E4FP",
+  //     url: "https://help.scrapingbee.com/en/article/getting-started-102sb0i/",
+  //   },
+  // })
+
+  // console.log(res2.data)
 })()

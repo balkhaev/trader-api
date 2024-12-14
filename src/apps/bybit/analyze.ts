@@ -47,7 +47,3 @@ analyzeSymbolQueue.on("completed", async (job) => {
 
   io.emit("job-count", await analyzeSymbolQueue.count())
 })
-
-analyzeSymbolQueue.on("drained", async () => {
-  analyzeBybit()
-})

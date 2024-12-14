@@ -1,20 +1,22 @@
 import { WebsocketClient, RestClientV5 } from "bybit-api"
+import { HttpsProxyAgent } from "https-proxy-agent"
+import { SocksProxyAgent } from "socks-proxy-agent"
 
 const key = process.env.BYBIT_API_KEY!
 const secret = process.env.BYBIT_API_SECRET!
 
+// const proxyAgent = new HttpsProxyAgent(
+//   "http://customer-3v5s610048-region-europe:04bhtjsd@proxy.goproxy.com:30000"
+// )
+// const socksAgent = new SocksProxyAgent(
+//   "socks5://customer-3v5s610048:04bhtjsd@proxy.goproxy.com:30000"
+// )
+
 export const bybitRestClient = new RestClientV5(
   { key, secret, testnet: false },
   {
-    proxy: {
-      protocol: "http",
-      host: "proxy.scrapingbee.com",
-      port: 8886,
-      auth: {
-        username: process.env.SCRAPINGBEE_KEY!,
-        password: "render_js=False&premium_proxy=True",
-      },
-    },
+    // httpAgent: proxyAgent,
+    // httpsAgent: proxyAgent,
   }
 )
 

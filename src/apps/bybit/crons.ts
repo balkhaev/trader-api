@@ -7,15 +7,7 @@ import { supabase } from "../../lib/supabase"
 
 const CANDLES_TO_FETCH_FOR_SELL: KlineIntervalV3[] = ["1", "3", "15", "30"]
 
-// export const analyzeBybitCron = new CronJob(
-//   "*/3 * * * *",
-//   async () => {
-//     analyzeBybit()
-//   },
-//   null
-// )
-
-const checkSell = async () => {
+export const checkPositionsSell = async () => {
   console.log("SELL CHECK", format(new Date(), "yyyy-MM-dd HH:mm:ss"))
 
   const positions = await fetchPositions()
@@ -65,6 +57,10 @@ const checkSell = async () => {
   }
 }
 
-if (process.env.NODE_ENV === "production") {
-  setInterval(checkSell, 15000)
-}
+// export const analyzeBybitCron = new CronJob(
+//   "*/3 * * * *",
+//   async () => {
+//     analyzeBybit()
+//   },
+//   null
+// )
