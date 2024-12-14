@@ -161,51 +161,15 @@ export function sellLongSignal(
     }
   }
 
-  // if (isBearishEngulfing(candles30)) {
-  //   return {
-  //     signal: -1,
-  //     indicators: [{ name: "Bearish Engulfing detected", signal: -1 }],
-  //   }
-  // }
-  // const isBearishTrend = !isAboveEMA(candles30, 50) // Проверка через EMA
-
-  // if (!isBearishTrend) {
-  //   return {
-  //     signal: 0,
-  //     indicators: [{ name: "Bearish trend not confirmed", signal: 0 }],
-  //   }
-  // }
-
-  // const macd = MACD.calculate({
-  //   values: candles30.map((candle) => candle.close),
-  //   fastPeriod: 8,
-  //   slowPeriod: 21,
-  //   signalPeriod: 5,
-  //   SimpleMAOscillator: false,
-  //   SimpleMASignal: false,
-  // })
-
-  // if (
-  //   isBearishDivergence(
-  //     candles30,
-  //     macd.map((h) => h.histogram!)
-  //   )
-  // ) {
-  //   return {
-  //     signal: -1,
-  //     indicators: [{ name: "Bearish Divergence Detected", signal: -1 }],
-  //   }
-  // }
-
   const buyedTime = new Date(buy.created_at).getTime()
-  const stayTime = addMinutes(buyedTime, 60).getTime()
+  const stayTime = addMinutes(buyedTime, 30).getTime()
 
   if (stayTime > Date.now()) {
     return {
       signal: 0,
       indicators: [
         {
-          name: "Wait 60 min",
+          name: "Wait 30 min",
           signal: 0,
           data: `${stayTime - Date.now() / 1000} need more seconds`,
         },

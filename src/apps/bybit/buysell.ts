@@ -36,10 +36,11 @@ export const buy = async (symbol: string, usdt: number) => {
 
   const instrument = await fetchInstrumentInfo(symbol)
   const currentPrice = await fetchCurrentPrice(symbol)
-  const qty = (usdt / currentPrice).toFixed(2)
+  const basePrecision = instrument.lotSizeFilter.basePrecision.split(".")[1]
+  const precision = basePrecision ? 0 : basePrecision.length
+  const qty = (usdt / currentPrice).toFixed(precision)
 
-  if (instrument.lotSizeFilter.minOrderQty > qty) {
-    console.log("too small qty", { instrument, qty, currentPrice })
+  if (parseFloat(instrument.lotSizeFilter.minOrderQty) > parseFloat(qty)) {
     rmWaitBuySymbol(symbol)
     return null
   }
@@ -63,7 +64,7 @@ export const buy = async (symbol: string, usdt: number) => {
       qty,
     }
   } catch (e) {
-    console.log(e)
+    console.log(instrument, e)
     rmWaitBuySymbol(symbol)
 
     return null

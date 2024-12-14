@@ -48,10 +48,15 @@ analyzeSymbolQueue.on("completed", async (job) => {
     return
   }
 
-  const long =
-    typeof data.long === "object" && !Array.isArray(data.long)
-      ? data.long
+  const e0v1e =
+    typeof data.e0v1e === "object" && !Array.isArray(data.e0v1e)
+      ? data.e0v1e
       : null
+
+  const long = e0v1e
+  // typeof data.long === "object" && !Array.isArray(data.long)
+  //   ? data.long
+  //   : null
 
   const short =
     typeof data.short === "object" && !Array.isArray(data.short)
@@ -60,10 +65,10 @@ analyzeSymbolQueue.on("completed", async (job) => {
 
   const isLongSignal = long?.signal === 1
   const buyType = isLongSignal ? "long" : "short"
-  const approve = isLongSignal || short?.signal === 1
+  const buyApprove = isLongSignal || short?.signal === 1
   const symbol = job.returnvalue.symbol
 
-  if (approve) {
+  if (buyApprove) {
     const { data: lastBuy } = await supabase
       .from("buys")
       .select("created_at,selled")

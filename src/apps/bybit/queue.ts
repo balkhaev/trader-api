@@ -8,6 +8,7 @@ import { ratingAnalyze } from "../blackbox"
 import { KlineIntervalV3 } from "bybit-api"
 import { buyLongSignal } from "./strategy/long"
 import { buyShortSignal } from "./strategy/short"
+import { buyEovieSignal } from "./strategy/e0v1e"
 
 export const analyzeSymbolQueue = new Queue<{ symbol: string }>(
   "bybit-analyze",
@@ -64,8 +65,18 @@ analyzeSymbolQueue.process(4, async (job) => {
     candles240,
   })
 
+  const e0v1e = buyEovieSignal({
+    analysis: analysis30,
+    currentPrice: ticker.lastPrice,
+    candles3,
+    candles15,
+    candles30,
+    candles240,
+  })
+
   return {
     ...analysis30,
+    e0v1e,
     long,
     short,
     rating,

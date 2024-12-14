@@ -30,7 +30,7 @@ type IndicatorPeriods = {
 }
 
 const DEFAULT_PERIODS: Required<IndicatorPeriods> = {
-  sma: 14,
+  sma: 15,
   rsi: 14,
   macdFast: 12,
   macdSlow: 26,

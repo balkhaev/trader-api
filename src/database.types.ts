@@ -17,6 +17,7 @@ export type Database = {
           cci: number | null
           change24h: number | null
           created_at: string | null
+          e0v1e: Json | null
           ema: number | null
           id: number
           indicators: Json | null
@@ -43,6 +44,7 @@ export type Database = {
           cci?: number | null
           change24h?: number | null
           created_at?: string | null
+          e0v1e?: Json | null
           ema?: number | null
           id?: never
           indicators?: Json | null
@@ -69,6 +71,7 @@ export type Database = {
           cci?: number | null
           change24h?: number | null
           created_at?: string | null
+          e0v1e?: Json | null
           ema?: number | null
           id?: never
           indicators?: Json | null
@@ -185,6 +188,7 @@ export type Database = {
           cci: number | null
           change24h: number | null
           created_at: string | null
+          e0v1e: Json | null
           ema: number | null
           id: number
           indicators: Json | null
