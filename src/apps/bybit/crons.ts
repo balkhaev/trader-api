@@ -31,8 +31,9 @@ export const checkPositionsSell = async () => {
         fetchKline({ symbol, interval })
       )
     )
+    const isLong = buy.type === "long"
 
-    const sellSignal = buy.type === "short" ? sellShortSignal : sellLongSignal
+    const sellSignal = isLong ? sellLongSignal : sellShortSignal
 
     const { signal, indicators } = sellSignal(
       buy,
@@ -44,10 +45,6 @@ export const checkPositionsSell = async () => {
     )
 
     console.log("check", symbol, signal, indicators)
-
-    if (differenceInMinutes(new Date(), buy.created_at) > 5) {
-      return
-    }
 
     if (signal === -1) {
       try {

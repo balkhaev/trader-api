@@ -9,6 +9,7 @@ import { isVolumeIncreasing } from "../../blackbox/indicators/volume"
 import { ATR } from "technicalindicators"
 import { Tables } from "../../../database.types"
 import { boolToSignal } from "../utils"
+import { addMinutes } from "date-fns"
 
 function calculateATR(candles: Candle[]): number {
   return (
@@ -124,6 +125,22 @@ export function sellShortSignal(
   candles1: Candle[],
   candles3: Candle[]
 ): MetaSignal {
+  const buyedTime = parseInt(buy.created_at)
+  const stayTime = addMinutes(buyedTime, 5).getTime()
+
+  if (stayTime > Date.now()) {
+    return {
+      signal: 0,
+      indicators: [
+        {
+          name: "Wait 5 min",
+          signal: 0,
+          data: `${stayTime - Date.now() / 1000} need more seconds`,
+        },
+      ],
+    }
+  }
+
   const qty = parseFloat(buy.qty)
   const pnl = qty * (currentPrice - buy.price)
   const takeProfitPnl = 0.2
