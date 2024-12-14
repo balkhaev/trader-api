@@ -15,15 +15,15 @@ async function main() {
     console.log("NODE_ENV:", process.env.NODE_ENV)
   })
 
-  analyzeSymbolQueue.on("drained", async () => {
-    analyzeBybit()
-  })
+  if (process.env.NODE_ENV === "development") {
+    analyzeSymbolQueue.on("drained", async () => {
+      analyzeBybit()
+    })
 
-  if ((await analyzeSymbolQueue.getActiveCount()) === 0) {
-    analyzeBybit()
+    if ((await analyzeSymbolQueue.getActiveCount()) === 0) {
+      analyzeBybit()
+    }
   }
-
-  console.log("analyze ready")
 
   if (process.env.NODE_ENV === "production") {
     setInterval(checkPositionsSell, 15000)
