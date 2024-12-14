@@ -1,12 +1,11 @@
-import { OHLCVKlineV5, TickerLinearInverseV5 } from "bybit-api"
+import { OHLCVKlineV5, TickerSpotV5 } from "bybit-api"
 import { Candle, Ticker } from "../../../types"
 
-export const tickerAdapter = (ticker: TickerLinearInverseV5): Ticker => ({
+export const tickerAdapter = (ticker: TickerSpotV5): Ticker => ({
   symbol: ticker.symbol,
   lastPrice: parseFloat(ticker.lastPrice),
   volume24h: parseFloat(ticker.volume24h),
   change24h: parseFloat(ticker.price24hPcnt),
-  openInterest: parseFloat(ticker.openInterestValue),
 })
 
 export const klineAdapter = (kline: OHLCVKlineV5): Candle => ({

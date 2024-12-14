@@ -4,7 +4,7 @@ import { getSupertrendSignal } from "./signals/supertrend"
 /**
  * Функция проверки пересечения сигналов
  */
-export function checkSignalsCrossing(signals: Signal[]): Signal {
+export function getCrossingSignal(signals: Signal[]): Signal {
   const firstSignal = signals[0]
   const allEqual = signals.every((s) => s === firstSignal)
 
@@ -18,9 +18,11 @@ export function getSupertrendCrossingSignal(
   candles: Candle[],
   opts: any[]
 ) {
-  return checkSignalsCrossing(
-    opts.map((cfg) =>
-      getSupertrendSignal(lastPrice, candles, cfg.period, cfg.multiplier)
+  return getCrossingSignal(
+    opts.map(
+      (cfg) =>
+        getSupertrendSignal(lastPrice, candles, cfg.period, cfg.multiplier)
+          .signal
     )
   )
 }

@@ -26,7 +26,6 @@ export type Ticker = {
   lastPrice: number
   change24h: number
   volume24h: number
-  openInterest?: number
 }
 export type Analyze = {
   symbol?: string
@@ -43,7 +42,6 @@ export type Analyze = {
   ema: number | null
   momentum: number | null
   trend: "Bullish" | "Bearish" | "Neutral"
-  openInterest?: number
   change24h?: number
   volume24h?: number
 }

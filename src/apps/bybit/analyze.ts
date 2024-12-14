@@ -1,5 +1,10 @@
+import snakecaseKeys from "snakecase-keys"
+import { supabase } from "../../lib/supabase"
+import { buy } from "./buysell"
 import { analyzeSymbolQueue } from "./queue"
 import { fetchTickers } from "./sdk/methods"
+import { io } from "../../server"
+import "./crons"
 
 export async function getTrendTickers() {
   const tickers = await fetchTickers()
@@ -25,3 +30,24 @@ export default async function analyzeBybit() {
 
   return { tickers }
 }
+
+analyzeSymbolQueue.on("completed", async (job) => {
+  if (job.returnvalue.signal === 1) {
+    buy(job.returnvalue.symbol)
+  }
+
+  const { error } = await supabase
+    .from("analysis")
+    .insert(snakecaseKeys(job.returnvalue, { deep: false }))
+
+  if (error) {
+    console.error(job, error)
+    throw error
+  }
+
+  io.emit("job-count", await analyzeSymbolQueue.count())
+})
+
+analyzeSymbolQueue.on("drained", async () => {
+  analyzeBybit()
+})

@@ -5,7 +5,7 @@ import { klineAdapter, tickerAdapter } from "./adapters"
 
 export async function fetchTickers(): Promise<Ticker[]> {
   const { result } = await bybitRestClient.getTickers({
-    category: "linear",
+    category: "spot",
     baseCoin: process.env.BASE_CURRENCY,
   })
 
@@ -19,7 +19,7 @@ export async function fetchKline({
 }: Partial<GetKlineParamsV5>): Promise<Candle[]> {
   const res = await bybitRestClient.getKline({
     symbol,
-    category: "linear",
+    category: "spot",
     interval,
     limit, // Количество свечей (ограничено API)
   })
@@ -30,7 +30,7 @@ export async function fetchKline({
 export async function fetchCurrentPrice(symbol: string) {
   const { result } = await bybitRestClient.getTickers({
     symbol,
-    category: "linear",
+    category: "spot",
   })
 
   return parseFloat(result.list[0].lastPrice)
@@ -44,7 +44,7 @@ export type OrderParams = Pick<
 export async function createOrder(opts: OrderParams) {
   const { result, retMsg } = await bybitRestClient.submitOrder({
     ...opts,
-    category: "linear",
+    category: "spot",
     timeInForce: "GTC",
     marketUnit: "quoteCoin",
   })
@@ -58,10 +58,21 @@ export async function createOrder(opts: OrderParams) {
 
 export async function fetchPositions(symbol?: string) {
   const position = await bybitRestClient.getPositionInfo({
-    category: "linear",
+    category: "spot",
     settleCoin: "USDT",
     symbol,
   })
 
   return position.result.list
+}
+
+export async function fetchInstrumentInfo(symbol: string) {
+  const { result } = await bybitRestClient.getInstrumentsInfo({
+    category: "spot",
+    symbol,
+  })
+
+  const instrument = result.list[0]
+
+  return instrument
 }

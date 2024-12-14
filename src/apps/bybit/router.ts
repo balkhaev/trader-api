@@ -5,7 +5,7 @@ import { bybitRestClient } from "./sdk/clients"
 import express from "express"
 import { listenBybit, unlistenBybit } from "./websocket"
 import { analyzeSymbolQueue } from "./queue"
-import { analyzeBybitCron } from "./crons"
+import { fetchPositions } from "./sdk/methods"
 
 const router = express.Router()
 
@@ -23,8 +23,17 @@ router.get("/analysis/:symbol", async (req, res) => {
 })
 
 router.post("/analysis", async (req, res) => {
+  if (await analyzeSymbolQueue.isPaused()) {
+    await analyzeSymbolQueue.resume()
+
+    res.json({
+      status: "ok",
+    })
+
+    return
+  }
+
   const result = await analyzeBybit()
-  analyzeBybitCron.start()
 
   res.json({
     status: "ok",
@@ -33,14 +42,17 @@ router.post("/analysis", async (req, res) => {
 })
 
 router.get("/status/bybit", async (req, res) => {
+  const activeJobs = await analyzeSymbolQueue.getActiveCount()
+  const isPaused = await analyzeSymbolQueue.isPaused()
+
   res.json({
     status: "ok",
-    result: { working: analyzeBybitCron.running },
+    result: { working: !isPaused && activeJobs > 0 },
   })
 })
 
 router.delete("/analysis", async (req, res) => {
-  await analyzeSymbolQueue.removeJobs("*")
+  await analyzeSymbolQueue.pause()
 
   res.json({
     status: "ok",
@@ -67,7 +79,7 @@ router.post("/analysis/:symbol", async (req, res) => {
 router.get("/market/:symbol", async (req, res) => {
   const data = await bybitRestClient.getTickers({
     symbol: req.params.symbol,
-    category: "linear",
+    category: "spot",
   })
 
   res.json(data.result)
@@ -87,6 +99,12 @@ router.post("/market/:symbol/unlisten", async (req, res) => {
   res.json({
     status: "ok",
   })
+})
+
+router.get("/positions", async (req, res) => {
+  const data = await fetchPositions()
+
+  res.json(data)
 })
 
 export default router

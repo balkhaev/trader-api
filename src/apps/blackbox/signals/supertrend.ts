@@ -1,111 +1,63 @@
-import { ATR } from "technicalindicators"
-import { Candle, Signal } from "../../../types"
-
-function supertrend(
-  initialArray: Candle[],
-  period = 10,
-  multiplier = 3
-): Array<number> {
-  const v = {
-    high: [] as number[],
-    low: [] as number[],
-    close: [] as number[],
-    period,
-  }
-  for (let i = 0; i < initialArray.length; i++) {
-    v.high.push(initialArray[i].high)
-    v.low.push(initialArray[i].low)
-    v.close.push(initialArray[i].close)
-  }
-  const atr = ATR.calculate(v)
-
-  const r = [...initialArray]
-
-  for (let i = 0; i < period; i++) {
-    r.shift()
-  }
-
-  const basicUpperBand = []
-  const basicLowerBand = []
-  for (let i = 0; i < r.length; i++) {
-    basicUpperBand.push((r[i].high + r[i].low) / 2 + multiplier * atr[i])
-    basicLowerBand.push((r[i].high + r[i].low) / 2 - multiplier * atr[i])
-  }
-
-  const finalUpperBand = []
-  const finalLowerBand = []
-  let previousFinalUpperBand = 0
-  let previousFinalLowerBand = 0
-  for (let i = 0; i < r.length; i++) {
-    if (
-      basicUpperBand[i] < previousFinalUpperBand ||
-      (r[i - 1] && r[i - 1].close > previousFinalUpperBand)
-    ) {
-      finalUpperBand.push(basicUpperBand[i])
-    } else {
-      finalUpperBand.push(previousFinalUpperBand)
-    }
-    if (
-      basicLowerBand[i] > previousFinalLowerBand ||
-      (r[i - 1] && r[i - 1].close < previousFinalLowerBand)
-    ) {
-      finalLowerBand.push(basicLowerBand[i])
-    } else {
-      finalLowerBand.push(previousFinalLowerBand)
-    }
-    previousFinalUpperBand = finalUpperBand[i]
-    previousFinalLowerBand = finalLowerBand[i]
-  }
-
-  const superTrend = []
-  let previousSuperTrend = 0
-  for (let i = 0; i < r.length; i++) {
-    let nowSuperTrend = 0
-    if (
-      previousSuperTrend == finalUpperBand[i - 1] &&
-      r[i].close <= finalUpperBand[i]
-    ) {
-      nowSuperTrend = finalUpperBand[i]
-    } else if (
-      previousSuperTrend == finalUpperBand[i - 1] &&
-      r[i].close > finalUpperBand[i]
-    ) {
-      nowSuperTrend = finalLowerBand[i]
-    } else if (
-      previousSuperTrend == finalLowerBand[i - 1] &&
-      r[i].close >= finalLowerBand[i]
-    ) {
-      nowSuperTrend = finalLowerBand[i]
-    } else if (
-      previousSuperTrend == finalLowerBand[i - 1] &&
-      r[i].close < finalLowerBand[i]
-    ) {
-      nowSuperTrend = finalUpperBand[i]
-    }
-    superTrend.push(nowSuperTrend)
-    previousSuperTrend = superTrend[i]
-  }
-
-  return superTrend
-}
+import { Candle } from "../../../types"
+import { MetaSignal } from "../../bybit/signals"
+import { supertrend } from "../indicators/supertrend"
 
 export function getSupertrendSignal(
   lastPrice: number,
   initialArray: Candle[],
   period = 10,
   multiplier = 3
-): Signal {
-  const lastTrend = supertrend(initialArray, period, multiplier).pop()
-
-  if (!lastTrend) {
-    return 0
+): MetaSignal {
+  if (initialArray.length < period) {
+    return {
+      signal: 0,
+      indicators: [
+        {
+          name: `Need more candles (period ${period})`,
+          signal: initialArray.length,
+        },
+      ],
+    }
   }
 
-  if (lastPrice > lastTrend) {
-    return 1
-  } else if (lastPrice < lastTrend) {
-    return -1
+  const st = supertrend(initialArray, period, multiplier)
+  const lastTrend = st[st.length - 1]
+
+  // Логика пересечения: проверяем, пересекала ли цена супертренд снизу вверх
+  let wasBelow = false // Флаг: была ли цена ниже супертренда
+  let crossedUp = false // Флаг: произошло ли пересечение снизу вверх
+
+  const positiveTrend = lastPrice > lastTrend
+  const negativeTrend = lastPrice < lastTrend
+
+  for (let i = 0; i < st.length - 1; i++) {
+    const currentPrice = initialArray[i].close // Цена закрытия текущей свечи
+    const currentSupertrend = st[i]
+
+    if (currentPrice < currentSupertrend) {
+      wasBelow = true // Цена была ниже супертренда
+    }
+
+    if (wasBelow && currentPrice > st[i + 1]) {
+      crossedUp = true // Пересечение снизу вверх
+      break
+    }
   }
 
-  return 0
+  const indicators = [
+    {
+      name: `Was below (${period}, ${multiplier})`,
+      signal: wasBelow,
+    },
+    {
+      name: `Crossed up (${period}, ${multiplier})`,
+      signal: crossedUp,
+    },
+  ]
+
+  return {
+    signal: positiveTrend ? 1 : negativeTrend ? -1 : 0,
+    indicators,
+    newTrend: wasBelow || crossedUp,
+  }
 }

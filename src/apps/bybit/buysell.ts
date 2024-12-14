@@ -1,22 +1,43 @@
-import { createOrder, fetchCurrentPrice, fetchPositions } from "./sdk/methods"
+import {
+  createOrder,
+  fetchCurrentPrice,
+  fetchInstrumentInfo,
+  fetchPositions,
+} from "./sdk/methods"
 import { io } from "../../server"
-import { addWaitBuySymbol, hasWaitBuySymbol, rmWaitBuySymbol } from "./state"
+import {
+  addWaitBuySymbol,
+  countWaitBuySymbols,
+  hasWaitBuySymbol,
+  rmWaitBuySymbol,
+} from "./state"
+import { LIMIT_BUYS } from "./consts"
+
+const USDT_QTY = 3
 
 export const buy = async (symbol: string) => {
   if (hasWaitBuySymbol(symbol)) return
 
-  const positions = await fetchPositions(symbol)
+  addWaitBuySymbol(symbol)
 
-  if (positions.length > 0) {
+  const positions = await fetchPositions()
+  const symbolPosition = positions.find((p) => p.symbol === symbol)
+  const sizedPositions = positions.filter((p) => parseFloat(p.size) > 0)
+
+  if (symbolPosition && parseFloat(symbolPosition.size) > 0) {
+    rmWaitBuySymbol(symbol)
     return
   }
 
-  addWaitBuySymbol(symbol)
+  if (countWaitBuySymbols() + sizedPositions.length >= LIMIT_BUYS) {
+    rmWaitBuySymbol(symbol)
+    return
+  }
 
   console.log(symbol, "buying...")
 
   const currentPrice = await fetchCurrentPrice(symbol)
-  const qty = (5 / currentPrice).toFixed(1)
+  const qty = (USDT_QTY / currentPrice).toFixed(2)
 
   try {
     const order = await createOrder({
@@ -41,8 +62,6 @@ export const buy = async (symbol: string) => {
 export const sell = async (symbol: string) => {
   console.log("try sell", symbol)
 
-  if (!hasWaitBuySymbol(symbol)) return
-
   const [position] = await fetchPositions(symbol)
 
   if (!position || position.size === "0") {
@@ -51,8 +70,6 @@ export const sell = async (symbol: string) => {
 
   const qty = position.size // Текущее количество монет
 
-  console.log(symbol, "selled", position)
-
   const order = await createOrder({
     symbol,
     side: "Sell",
@@ -60,6 +77,8 @@ export const sell = async (symbol: string) => {
     qty,
     marketUnit: "quoteCoin",
   })
+
+  console.log(symbol, "selled")
 
   io.emit("selled")
 

@@ -17,7 +17,6 @@ const INDICATOR_WEIGHTS = {
   adx: 1.3,
   cci: 1,
   change24h: 0.1,
-  openInterest: 0.1,
 }
 
 // Вспомогательная функция для безопасного деления
@@ -29,7 +28,7 @@ type CandlesOpts = {
   ticker: Ticker
 }
 
-export function analyzeCandles({ analysis, ticker }: CandlesOpts): number {
+export function ratingAnalyze({ analysis, ticker }: CandlesOpts): number {
   const currentPrice = ticker.lastPrice
 
   const indicators: IndicatorFunction[] = [

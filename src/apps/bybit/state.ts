@@ -25,6 +25,10 @@ export function hasWaitBuySymbol(symbol: string) {
   return waitBuySumbols.findIndex((s) => s === symbol) !== -1
 }
 
+export function countWaitBuySymbols() {
+  return waitBuySumbols.length
+}
+
 export function setTimeframeKlines(timeframe: AllowedIntervals, kline: Candle) {
   if (!kline.start) {
     throw new Error("kline.start is required")

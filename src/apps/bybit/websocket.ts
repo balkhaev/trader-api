@@ -78,7 +78,7 @@ export async function listenBybit(symbol: string) {
     })
   })
 
-  bybitWsClient.subscribeV5(getSubscriptions(symbol), "linear")
+  bybitWsClient.subscribeV5(getSubscriptions(symbol), "spot")
 
   intervalId2 = setInterval(() => {
     io.emit(
@@ -90,7 +90,7 @@ export async function listenBybit(symbol: string) {
 }
 
 export function unlistenBybit(symbol: string) {
-  bybitWsClient.unsubscribeV5(getSubscriptions(symbol, true), "linear")
+  bybitWsClient.unsubscribeV5(getSubscriptions(symbol, true), "spot")
   if (intervalId2) {
     clearInterval(intervalId2)
     intervalId2 = null

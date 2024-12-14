@@ -120,6 +120,45 @@ export type Database = {
         }
         Relationships: []
       }
+      sells: {
+        Row: {
+          candles1: Json
+          candles15: Json
+          candles3: Json
+          candles30: Json
+          created_at: string | null
+          id: number
+          indicators: Json
+          new_trend: boolean | null
+          symbol: string
+          unrealised_pnl: string
+        }
+        Insert: {
+          candles1: Json
+          candles15: Json
+          candles3: Json
+          candles30: Json
+          created_at?: string | null
+          id?: never
+          indicators: Json
+          new_trend?: boolean | null
+          symbol: string
+          unrealised_pnl: string
+        }
+        Update: {
+          candles1?: Json
+          candles15?: Json
+          candles3?: Json
+          candles30?: Json
+          created_at?: string | null
+          id?: never
+          indicators?: Json
+          new_trend?: boolean | null
+          symbol?: string
+          unrealised_pnl?: string
+        }
+        Relationships: []
+      }
       tickers_spot: {
         Row: {
           high_price_24h: number
