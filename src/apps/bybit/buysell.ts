@@ -70,7 +70,7 @@ export const buy = async (symbol: string, usdt: number) => {
   }
 }
 
-export const sell = async (coin: string) => {
+export const sell = async (coin: string, percent = 100) => {
   console.log("try sell", coin)
 
   const symbol = coin + process.env.BASE_CURRENCY
@@ -82,19 +82,25 @@ export const sell = async (coin: string) => {
     .limit(1)
     .single()
 
-  if (!buy) {
+  const buyedCoins = await fetchBuyedCoins()
+  const buyedCoin = buyedCoins.find((p) => p.coin === coin)
+
+  if (!buy || !buyedCoin) {
     throw new Error("Нет открытой позиции для продажи.")
   }
+
+  const qty = parseFloat(buyedCoin.walletBalance) * (percent / 100)
+  const toSell = Math.floor(qty * 10) / 10
 
   const order = await createOrder({
     symbol,
     side: "Sell",
     orderType: "Market",
-    qty: buy.qty,
+    qty: toSell.toString(),
     marketUnit: "baseCoin",
   })
 
-  console.log(symbol, "selled")
+  console.log(symbol, "selled", toSell)
 
   io.emit("selled")
 

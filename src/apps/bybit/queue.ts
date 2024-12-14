@@ -36,7 +36,6 @@ analyzeSymbolQueue.process(4, async (job) => {
   })
 
   const ticker = tickerAdapter(tickers.list[0])
-  console.log(job.data.symbol, ticker.lastPrice, tickers)
   // const analysis3 = getTechnicalAnalyze(candles3)
   // const analysis15 = getTechnicalAnalyze(candles15)
   const analysis30 = getTechnicalAnalyze(candles30)

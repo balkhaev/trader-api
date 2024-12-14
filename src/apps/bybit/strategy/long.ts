@@ -199,15 +199,15 @@ export function sellLongSignal(
   //   }
   // }
 
-  const buyedTime = parseInt(buy.created_at)
-  const stayTime = addMinutes(buyedTime, 30).getTime()
+  const buyedTime = new Date(buy.created_at).getTime()
+  const stayTime = addMinutes(buyedTime, 60).getTime()
 
   if (stayTime > Date.now()) {
     return {
       signal: 0,
       indicators: [
         {
-          name: "Wait 30 min",
+          name: "Wait 60 min",
           signal: 0,
           data: `${stayTime - Date.now() / 1000} need more seconds`,
         },
