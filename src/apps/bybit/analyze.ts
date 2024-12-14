@@ -9,11 +9,14 @@ import "./crons"
 export async function getTrendTickers() {
   const tickers = await fetchTickers()
 
-  const trending = tickers.filter(
-    (ticker) =>
-      ticker.lastPrice > 0.2 &&
-      ticker.symbol.endsWith(process.env.BASE_CURRENCY!)
-  )
+  const trending = tickers.filter((ticker) => {
+    return (
+      ticker.volume24h > 2_000_000 && // Объем торгов за 24 часа > 5 млн
+      ticker.turnover24 > 500_000 && // Оборот за 24 часа > 1 млн
+      Math.abs(ticker.change24h) > 0.02 && // Изменение цены более 2% за 24 часа
+      ticker.symbol.endsWith(process.env.BASE_CURRENCY!) // Фильтрация по базовой валюте
+    )
+  })
 
   return {
     all: tickers,

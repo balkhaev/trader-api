@@ -81,7 +81,13 @@ export async function fetchBuyedCoins() {
     accountType: "UNIFIED",
   })
 
+  if (!result.list) {
+    return []
+  }
+
   return result.list[0].coin.filter(
-    (el) => el.coin.toUpperCase() !== process.env.BASE_CURRENCY
+    (el) =>
+      el.coin.toUpperCase() !== process.env.BASE_CURRENCY &&
+      parseInt(el.usdValue) > 0.5
   )
 }

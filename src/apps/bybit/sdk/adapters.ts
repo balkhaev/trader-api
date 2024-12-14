@@ -6,6 +6,7 @@ export const tickerAdapter = (ticker: TickerSpotV5): Ticker => ({
   lastPrice: parseFloat(ticker.lastPrice),
   volume24h: parseFloat(ticker.volume24h),
   change24h: parseFloat(ticker.price24hPcnt),
+  turnover24: parseFloat(ticker.turnover24h),
 })
 
 export const klineAdapter = (kline: OHLCVKlineV5): Candle => ({
