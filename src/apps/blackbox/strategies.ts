@@ -1,6 +1,10 @@
 import { Candle, Signal } from "../../types"
 import { getSupertrendSignal } from "./signals/supertrend"
 
+export function reverseSignal(signal: Signal): Signal {
+  return signal === 1 ? -1 : 1
+}
+
 /**
  * Функция проверки пересечения сигналов
  */

@@ -1,7 +1,7 @@
 import { ExecutionV5 } from "bybit-api"
 import { Analyze, Candle } from "../../../types"
 import { getSupertrendSignal } from "../../blackbox/signals/supertrend"
-import { getCrossingSignal } from "../../blackbox/strategies"
+import { getCrossingSignal, reverseSignal } from "../../blackbox/strategies"
 import { BUY_SIGNAL_CANDLES_LIMIT } from "../consts"
 import { MetaSignal } from "../types"
 import { isAboveEMA } from "../../blackbox/indicators/ema"
@@ -37,41 +37,10 @@ export function buyShortSignal({
   analysis,
   currentPrice,
   candles1,
+  candles3,
   candles30,
   candles240,
 }: SignalOpts): MetaSignal {
-  if (
-    !analysis.adx?.adx ||
-    !analysis.stochasticRsi?.stochRSI ||
-    !analysis.rsi
-  ) {
-    return {
-      signal: 0,
-      indicators: [{ name: "Insufficient Data", signal: 0 }],
-    }
-  }
-
-  const volumeInc = isVolumeIncreasing(candles30)
-  const globalBullish = isBullishTrend(candles240, 200) // 4H EMA 200
-  const mediumBullish = isBullishTrend(candles30, 50) // 30m EMA 50
-
-  // Определение спада цены (Pullback)
-  const shortEMA = isAboveEMA(candles1, 20) // EMA 20 для 1-минутного графика
-  const atr = calculateATR(candles30) // ATR для 30-минутного графика
-  const isPullback = shortEMA.diff < 0 && shortEMA.diff > -1 * atr // Цена ниже EMA, но в пределах 1 ATR
-
-  if (!globalBullish || !mediumBullish || !isPullback || !volumeInc) {
-    return {
-      signal: 0,
-      indicators: [
-        { name: "Global Bullish", signal: globalBullish ? 1 : 0 },
-        { name: "Medium Bullish", signal: mediumBullish ? 1 : 0 },
-        { name: "Pullback Confirmed", signal: isPullback ? 1 : 0 },
-        { name: "Volume Increasing", signal: volumeInc ? 1 : 0 },
-      ],
-    }
-  }
-
   const { signal: st240min } = getSupertrendSignal(
     currentPrice,
     candles240,
@@ -84,6 +53,12 @@ export function buyShortSignal({
     BUY_SIGNAL_CANDLES_LIMIT,
     2
   )
+  const { signal: st3min } = getSupertrendSignal(
+    currentPrice,
+    candles3,
+    BUY_SIGNAL_CANDLES_LIMIT,
+    2
+  )
   const { signal: st1min } = getSupertrendSignal(
     currentPrice,
     candles1,
@@ -91,12 +66,18 @@ export function buyShortSignal({
     1
   )
 
+  const st1Reversed = reverseSignal(st1min)
+
   return {
-    signal: getCrossingSignal([st1min, st30min, st240min]),
+    signal: getCrossingSignal([st1Reversed, st3min, st30min, st240min]),
     indicators: [
       {
-        name: "Supertrend 1 min",
-        signal: st1min,
+        name: "Supertrend reversed 1 min",
+        signal: st1Reversed,
+      },
+      {
+        name: "Supertrend 3 min",
+        signal: st3min,
       },
       {
         name: "Supertrend 30 min",
@@ -105,10 +86,6 @@ export function buyShortSignal({
       {
         name: "Supertrend 240 min",
         signal: st240min,
-      },
-      {
-        name: "EMA & ATR & PULLBACK",
-        signal: 1,
       },
     ],
   }

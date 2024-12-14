@@ -63,7 +63,7 @@ analyzeSymbolQueue.on("completed", async (job) => {
   const symbol = job.returnvalue.symbol
 
   if (approve) {
-    const order = await buy(symbol, isLongSignal ? 2 : 1.1)
+    const order = await buy(symbol, isLongSignal ? 3 : 1.6)
 
     if (order) {
       const currentPrice = await fetchCurrentPrice(symbol)

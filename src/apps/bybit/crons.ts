@@ -27,14 +27,14 @@ export const checkPositionsSell = async () => {
     const symbol = buy.symbol
     const currentPrice = await fetchCurrentPrice(symbol)
     const trades = await fetchTradeHistory(symbol)
-    const lastSellTrade = trades.reverse().find((t) => t.side === "Buy")
+    const lastBuy = trades.reverse().find((t) => t.side === "Buy")
     const [candles1, candles3, candles15, candles30] = await Promise.all(
       CANDLES_TO_FETCH_FOR_SELL.map((interval) =>
         fetchKline({ symbol, interval })
       )
     )
 
-    if (!lastSellTrade) {
+    if (!lastBuy) {
       console.log("WHERES LAST TRADE?!", symbol, trades)
       return
     }
@@ -42,7 +42,7 @@ export const checkPositionsSell = async () => {
     const sellSignal = buy.type === "short" ? sellShortSignal : sellLongSignal
 
     const { signal, indicators } = sellSignal(
-      lastSellTrade,
+      lastBuy,
       currentPrice,
       candles1,
       candles3,
@@ -69,8 +69,8 @@ export const checkPositionsSell = async () => {
         console.log("!UPDATE ERROR!", updateError)
       }
 
-      const qty = parseFloat(lastSellTrade.orderQty)
-      const tradePrice = parseFloat(lastSellTrade.orderPrice)
+      const qty = parseFloat(lastBuy.orderQty)
+      const tradePrice = parseFloat(lastBuy.orderPrice)
       const pnl = qty * (currentPrice - tradePrice)
 
       const { error } = await supabase.from("sells").insert({
