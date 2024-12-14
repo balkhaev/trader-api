@@ -38,7 +38,7 @@ export const checkPositionsSell = async () => {
 
     const sellSignal = isLong ? sellLongSignal : sellShortSignal
 
-    const { signal, indicators } = sellSignal(
+    let { signal, indicators } = sellSignal(
       buy,
       currentPrice,
       candles1,
@@ -47,6 +47,15 @@ export const checkPositionsSell = async () => {
       candles30
     )
 
+    const pnl = parseFloat(buy.qty) * (currentPrice - buy.price)
+    const takeProfit = buy.take_profit && pnl > buy.take_profit
+    const stopLoss = buy.stop_loss && pnl < buy.stop_loss
+
+    if (takeProfit || stopLoss) {
+      signal = -1
+    }
+
+    console.log({ takeProfit, stopLoss })
     console.log(indicators)
 
     if (signal === -1) {
@@ -65,10 +74,6 @@ export const checkPositionsSell = async () => {
       if (updateError) {
         console.log("!UPDATE ERROR!", updateError)
       }
-
-      const qty = parseFloat(buy.qty)
-      const tradePrice = buy.price
-      const pnl = qty * (currentPrice - tradePrice)
 
       const { error } = await supabase.from("sells").insert({
         pnl,

@@ -1,18 +1,16 @@
 import { Analyze, Candle, Signal } from "../../../types"
 import { getSupertrendSignal } from "../../blackbox/signals/supertrend"
 import { getCrossingSignal } from "../../blackbox/strategies"
-import { BUY_SIGNAL_CANDLES_LIMIT } from "../consts"
 import { MACD } from "technicalindicators"
 import { MetaSignal } from "../types"
 import { addMinutes } from "date-fns"
-import {
-  isBullishDivergence,
-  isBullishEngulfing,
-} from "../../blackbox/patterns"
+import { isBullishDivergence } from "../../blackbox/patterns"
 import { isAboveEMA } from "../../blackbox/indicators/ema"
 import { isVolumeIncreasing } from "../../blackbox/indicators/volume"
 import { Tables } from "../../../database.types"
 import { boolToSignal } from "../utils"
+
+const BUY_SIGNAL_CANDLES_LIMIT = 10
 
 type SignalOpts = {
   analysis: Analyze
@@ -98,7 +96,7 @@ export function buyLongSignal({
   const aboveEMA = isAboveEMA(candles240, 200).above
   const notWeakRSI = analysis.rsi > 30
   const stochiRSI = analysis.stochasticRsi.stochRSI < 20
-  const bullishEngulfing = isBullishEngulfing(candles15)
+  // const bullishEngulfing = isBullishEngulfing(candles15)
 
   return {
     signal: boolToSignal(
@@ -132,10 +130,10 @@ export function buyLongSignal({
         signal: boolToSignal(stochiRSI),
         data: analysis.stochasticRsi.stochRSI,
       },
-      {
-        name: "Bullish Engulfing Pattern",
-        signal: boolToSignal(bullishEngulfing),
-      },
+      // {
+      //   name: "Bullish Engulfing Pattern",
+      //   signal: boolToSignal(bullishEngulfing),
+      // },
     ],
   }
 }
@@ -148,20 +146,20 @@ export function sellLongSignal(
   candles15: Candle[],
   candles30: Candle[]
 ): MetaSignal {
-  // const pnl = parseFloat(coin.cumRealisedPnl)
-  // const takeProfitPnl = 0.2
-  // const stopLossPnl = -0.5
-  // const takeProfit = pnl > takeProfitPnl
-  // const stopLoss = pnl < stopLossPnl
+  const pnl = parseFloat(buy.qty) * (currentPrice - buy.price)
+  const takeProfitPnl = 0.2
+  const stopLossPnl = -0.5
+  const takeProfit = pnl > takeProfitPnl
+  const stopLoss = pnl < stopLossPnl
 
-  // if (takeProfit || stopLoss) {
-  //   return {
-  //     signal: -1,
-  //     indicators: [
-  //       { name: `Take Profit or Stop Loss Triggered`, signal: -1, data: pnl },
-  //     ],
-  //   }
-  // }
+  if (takeProfit || stopLoss) {
+    return {
+      signal: -1,
+      indicators: [
+        { name: `Take Profit or Stop Loss Triggered`, signal: -1, data: pnl },
+      ],
+    }
+  }
 
   // if (isBearishEngulfing(candles30)) {
   //   return {

@@ -1,26 +1,13 @@
-import { ExecutionV5 } from "bybit-api"
 import { Analyze, Candle } from "../../../types"
 import { getSupertrendSignal } from "../../blackbox/signals/supertrend"
 import { getCrossingSignal, reverseSignal } from "../../blackbox/strategies"
-import { BUY_SIGNAL_CANDLES_LIMIT } from "../consts"
 import { MetaSignal } from "../types"
 import { isAboveEMA } from "../../blackbox/indicators/ema"
-import { isVolumeIncreasing } from "../../blackbox/indicators/volume"
-import { ATR } from "technicalindicators"
 import { Tables } from "../../../database.types"
 import { boolToSignal } from "../utils"
 import { addMinutes } from "date-fns"
 
-function calculateATR(candles: Candle[]): number {
-  return (
-    ATR.calculate({
-      low: candles.map((c) => c.low),
-      high: candles.map((c) => c.high),
-      close: candles.map((c) => c.close),
-      period: 14,
-    }).pop() || 0
-  )
-}
+const BUY_SIGNAL_CANDLES_LIMIT = 10
 
 type SignalOpts = {
   analysis: Analyze
@@ -141,12 +128,9 @@ export function sellShortSignal(
     }
   }
 
-  const qty = parseFloat(buy.qty)
-  const pnl = qty * (currentPrice - buy.price)
-  const takeProfitPnl = 0.2
-  const stopLossPnl = -0.5
-  const takeProfit = pnl > takeProfitPnl
-  const stopLoss = pnl < stopLossPnl
+  const pnl = parseFloat(buy.qty) * (currentPrice - buy.price)
+  const takeProfit = buy.take_profit && pnl > buy.take_profit
+  const stopLoss = buy.stop_loss && pnl < buy.stop_loss
 
   if (takeProfit || stopLoss) {
     return {

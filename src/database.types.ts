@@ -100,7 +100,9 @@ export type Database = {
           price: number
           qty: string
           selled: boolean
+          stop_loss: number | null
           symbol: string
+          take_profit: number | null
           type: string
         }
         Insert: {
@@ -112,7 +114,9 @@ export type Database = {
           price: number
           qty: string
           selled?: boolean
+          stop_loss?: number | null
           symbol: string
+          take_profit?: number | null
           type: string
         }
         Update: {
@@ -124,7 +128,9 @@ export type Database = {
           price?: number
           qty?: string
           selled?: boolean
+          stop_loss?: number | null
           symbol?: string
+          take_profit?: number | null
           type?: string
         }
         Relationships: []
