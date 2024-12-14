@@ -21,10 +21,17 @@ export const analyzeSymbolQueue = new Queue<{ symbol: string }>(
   }
 )
 
-export const CANDLES_TO_FETCH: KlineIntervalV3[] = ["1", "3", "15", "30", "240"]
+export const CANDLES_TO_FETCH: KlineIntervalV3[] = [
+  "1",
+  "3",
+  "5",
+  "15",
+  "30",
+  "240",
+]
 
 analyzeSymbolQueue.process(4, async (job) => {
-  const [candles1, candles3, candles15, candles30, candles240] =
+  const [candles1, candles3, candles5, candles15, candles30, candles240] =
     await Promise.all(
       CANDLES_TO_FETCH.map((interval) =>
         fetchKline({ symbol: job.data.symbol, interval })
@@ -49,7 +56,9 @@ analyzeSymbolQueue.process(4, async (job) => {
   const long = buyLongSignal({
     analysis: analysis30,
     currentPrice: ticker.lastPrice,
+    candles1,
     candles3,
+    candles5,
     candles15,
     candles30,
     candles240,
@@ -60,6 +69,7 @@ analyzeSymbolQueue.process(4, async (job) => {
     currentPrice: ticker.lastPrice,
     candles1,
     candles3,
+    candles5,
     candles15,
     candles30,
     candles240,
@@ -68,7 +78,9 @@ analyzeSymbolQueue.process(4, async (job) => {
   const e0v1e = buyEovieSignal({
     analysis: analysis30,
     currentPrice: ticker.lastPrice,
+    candles1,
     candles3,
+    candles5,
     candles15,
     candles30,
     candles240,

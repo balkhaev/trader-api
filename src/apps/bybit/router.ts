@@ -102,6 +102,7 @@ router.post("/market/:symbol/unlisten", async (req, res) => {
 
 router.get("/buys", async (req, res) => {
   const { data } = await supabase.from("buys").select().eq("selled", false)
+  // const
 
   res.json({
     status: "ok",

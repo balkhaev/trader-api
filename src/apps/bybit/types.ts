@@ -1,4 +1,5 @@
-import { Signal } from "../../types"
+import { Tables } from "../../database.types"
+import { Analyze, Candle, Signal } from "../../types"
 
 export type BybitWS = {
   topic: string
@@ -18,8 +19,23 @@ export type MetaSignal = {
   signal: Signal
   indicators: {
     name: string
-    signal?: any
-    data?: string | number | boolean
+    signal?: Signal
+    data?: any
   }[]
   newTrend?: boolean
+}
+
+export type SignalOpts = {
+  analysis?: Analyze
+  currentPrice: number
+  candles1: Candle[]
+  candles3: Candle[]
+  candles5: Candle[]
+  candles15: Candle[]
+  candles30: Candle[]
+  candles240: Candle[]
+}
+
+export type SignalSellOpts = SignalOpts & {
+  buy: Tables<"buys">
 }

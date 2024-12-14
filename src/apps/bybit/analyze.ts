@@ -5,6 +5,7 @@ import { analyzeSymbolQueue } from "./queue"
 import { fetchCurrentPrice, fetchTickers } from "./sdk/methods"
 import { io } from "../../server"
 import { addMinutes, differenceInMinutes } from "date-fns"
+import { longPos, shortPos } from "./consts"
 
 export async function getTrendTickers() {
   const tickers = await fetchTickers()
@@ -53,19 +54,19 @@ analyzeSymbolQueue.on("completed", async (job) => {
       ? data.e0v1e
       : null
 
-  const long = e0v1e
-  // typeof data.long === "object" && !Array.isArray(data.long)
-  //   ? data.long
-  //   : null
+  const long =
+    typeof data.long === "object" && !Array.isArray(data.long)
+      ? data.long
+      : null
 
   const short =
     typeof data.short === "object" && !Array.isArray(data.short)
       ? data.short
       : null
 
-  const isLongSignal = long?.signal === 1
+  const isLongSignal = long?.signal === 1 || e0v1e?.signal === 1
   const buyType = isLongSignal ? "long" : "short"
-  const buyApprove = isLongSignal || short?.signal === 1
+  const buyApprove = isLongSignal // || short?.signal === 1
   const symbol = job.returnvalue.symbol
 
   if (buyApprove) {
@@ -85,7 +86,8 @@ analyzeSymbolQueue.on("completed", async (job) => {
       }
     }
 
-    const order = await buy(symbol, isLongSignal ? 3 : 1.6)
+    const pos = isLongSignal ? longPos : shortPos
+    const order = await buy(symbol, pos.buy)
 
     if (order) {
       const currentPrice = await fetchCurrentPrice(symbol)
@@ -99,9 +101,11 @@ analyzeSymbolQueue.on("completed", async (job) => {
         order_id: order.orderId,
         qty: order.qty,
         indicators: job.returnvalue[buyType].indicators,
-        type: buyType,
+        type: e0v1e?.signal === 1 ? "e0v1e" : buyType,
         coin: symbol.slice(0, -4),
         wait_for: waitFor,
+        take_profit: pos.profit,
+        stop_loss: pos.sell,
       })
 
       if (error) {

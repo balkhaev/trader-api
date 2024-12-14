@@ -1,28 +1,27 @@
-import { Tables } from "../../../database.types"
-import { Analyze, Candle } from "../../../types"
+import { getTechnicalAnalyze } from "../../blackbox/indicators"
 import { isAboveEMA } from "../../blackbox/indicators/ema"
 import { getSupertrendSignal } from "../../blackbox/signals/supertrend"
 import { getCrossingSignal } from "../../blackbox/strategies"
-import { MetaSignal } from "../types"
+import { MetaSignal, SignalOpts, SignalSellOpts } from "../types"
 import { boolToSignal } from "../utils"
 
-type SignalOpts = {
-  analysis: Analyze
-  currentPrice: number
-  candles3: Candle[]
-  candles15: Candle[]
-  candles30: Candle[]
-  candles240: Candle[]
-}
-
 export function buyEovieSignal({
-  analysis,
   currentPrice,
-  candles3,
-  candles15,
   candles30,
   candles240,
 }: SignalOpts): MetaSignal {
+  const analyze = getTechnicalAnalyze(candles30)
+
+  if (
+    !analyze.rsi ||
+    !analyze.stochasticRsi ||
+    !analyze.macd ||
+    !analyze.sma ||
+    !analyze.cci
+  ) {
+    return { signal: 0, indicators: [{ name: "Insufficient Data", signal: 0 }] }
+  }
+
   const { signal: globalTrend } = getSupertrendSignal(
     currentPrice,
     candles240,
@@ -30,92 +29,104 @@ export function buyEovieSignal({
     2
   )
 
-  if (
-    !globalTrend ||
-    !analysis.rsi ||
-    !analysis.stochasticRsi ||
-    !analysis.macd ||
-    !analysis.sma ||
-    !analysis.cci
-  ) {
-    return { signal: 0, indicators: [{ name: "Insufficient Data", signal: 0 }] }
-  }
-
   const isBullishTrend = isAboveEMA(candles240, 200).above
 
   const buyConditions = [
-    analysis.rsi > 28,
-    analysis.rsi < 50,
-    analysis.cci < -100,
-    currentPrice < analysis.sma * 0.96,
-    analysis.stochasticRsi.stochRSI < 20,
+    analyze.rsi > 28,
+    analyze.rsi < 50,
+    analyze.cci < -100,
+    currentPrice < analyze.sma * 0.96,
+    analyze.stochasticRsi.stochRSI < 20,
   ]
 
   const buySignal =
     buyConditions.every(Boolean) && globalTrend && isBullishTrend
 
   return {
-    signal: boolToSignal(buySignal),
+    signal: getCrossingSignal([boolToSignal(buySignal), globalTrend]),
     indicators: [
       {
+        name: "Global trend",
+        signal: globalTrend,
+      },
+      {
         name: "RSI within range",
-        signal: boolToSignal(analysis.rsi > 28 && analysis.rsi < 50),
+        signal: boolToSignal(analyze.rsi > 28 && analyze.rsi < 50),
       },
       {
         name: "Price below SMA",
-        signal: boolToSignal(currentPrice < analysis.sma * 0.96),
+        signal: boolToSignal(currentPrice < analyze.sma * 0.96),
       },
       {
         name: "Stochastic RSI Oversold",
-        signal: boolToSignal(analysis.stochasticRsi.stochRSI < 20),
+        signal: boolToSignal(analyze.stochasticRsi.stochRSI < 20),
       },
       { name: "Global Trend Bullish", signal: boolToSignal(globalTrend) },
       {
         name: "CCI Oversold",
-        signal: boolToSignal(analysis.cci < -100),
-        data: analysis.cci,
+        signal: boolToSignal(analyze.cci < -100),
+        data: analyze.cci,
       },
       { name: "Above EMA 200", signal: boolToSignal(isBullishTrend) },
     ],
   }
 }
 
-export function sellEovieSignal(
-  buy: Tables<"buys">,
-  currentPrice: number,
-  candles1: Candle[],
-  candles3: Candle[],
-  candles15: Candle[],
-  candles30: Candle[]
-): MetaSignal {
-  const pnl = parseFloat(buy.qty) * (currentPrice - buy.price)
-  const takeProfitPnl = 0.05 // Example threshold
-  const stopLossPnl = -0.3 // Example threshold
+export function sellEovieSignal({
+  currentPrice,
+  candles30,
+  candles240,
+}: SignalSellOpts): MetaSignal {
+  const analyze = getTechnicalAnalyze(candles30)
 
-  if (pnl >= takeProfitPnl) {
-    return {
-      signal: -1,
-      indicators: [{ name: "Take Profit Triggered", signal: -1, data: pnl }],
-    }
+  if (
+    !analyze.rsi ||
+    !analyze.stochasticRsi ||
+    !analyze.macd ||
+    !analyze.sma ||
+    !analyze.cci
+  ) {
+    return { signal: 0, indicators: [{ name: "Insufficient Data", signal: 0 }] }
   }
 
-  if (pnl <= stopLossPnl) {
-    return {
-      signal: -1,
-      indicators: [{ name: "Stop Loss Triggered", signal: -1, data: pnl }],
-    }
-  }
+  const isBearishTrend = !isAboveEMA(candles240, 200).above
 
-  const { signal: st3 } = getSupertrendSignal(currentPrice, candles3, 10, 2)
-  const { signal: st15 } = getSupertrendSignal(currentPrice, candles15, 10, 2)
+  // Условия для выхода из сделки (продажа)
+  const sellConditions = [
+    analyze.rsi > 70, // RSI указывает на перекупленность
+    analyze.cci > 100, // CCI указывает на перекупленность
+    currentPrice > analyze.sma * 1.04, // Цена выше SMA, что сигнализирует о возможном развороте
+    analyze.stochasticRsi.stochRSI > 80, // Stochastic RSI указывает на перекупленность
+  ]
 
-  const signal = getCrossingSignal([st3, st15])
+  const sellSignal = sellConditions.some(Boolean) && isBearishTrend
 
   return {
-    signal,
+    signal: boolToSignal(sellSignal),
     indicators: [
-      { name: "Supertrend 3m", signal: st3 },
-      { name: "Supertrend 15m", signal: st15 },
+      {
+        name: "RSI Overbought",
+        signal: boolToSignal(analyze.rsi > 70),
+        data: analyze.rsi,
+      },
+      {
+        name: "Price above SMA",
+        signal: boolToSignal(currentPrice > analyze.sma * 1.04),
+      },
+      {
+        name: "Stochastic RSI Overbought",
+        signal: boolToSignal(analyze.stochasticRsi.stochRSI > 80),
+        data: analyze.stochasticRsi.stochRSI,
+      },
+      {
+        name: "CCI Overbought",
+        signal: boolToSignal(analyze.cci > 100),
+        data: analyze.cci,
+      },
+      {
+        name: "Global Trend Bearish",
+        signal: boolToSignal(isBearishTrend),
+      },
     ],
   }
 }

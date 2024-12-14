@@ -11,8 +11,16 @@ import { KlineIntervalV3 } from "bybit-api"
 import { supabase } from "../../lib/supabase"
 import { sellShortSignal } from "./strategy/short"
 import { boolToSignal } from "./utils"
+import { sellEovieSignal } from "./strategy/e0v1e"
 
-const CANDLES_TO_FETCH_FOR_SELL: KlineIntervalV3[] = ["1", "3", "15", "30"]
+const CANDLES_TO_FETCH_FOR_SELL: KlineIntervalV3[] = [
+  "1",
+  "3",
+  "5",
+  "15",
+  "30",
+  "240",
+]
 
 export const checkPositionsSell = async () => {
   console.log("SELL CHECK", format(new Date(), "yyyy-MM-dd HH:mm:ss"))
@@ -35,23 +43,31 @@ export const checkPositionsSell = async () => {
     console.log("=======", symbol, "=========")
 
     const currentPrice = await fetchCurrentPrice(symbol)
-    const [candles1, candles3, candles15, candles30] = await Promise.all(
-      CANDLES_TO_FETCH_FOR_SELL.map((interval) =>
-        fetchKline({ symbol, interval })
+    const [candles1, candles3, candles5, candles15, candles30, candles240] =
+      await Promise.all(
+        CANDLES_TO_FETCH_FOR_SELL.map((interval) =>
+          fetchKline({ symbol, interval })
+        )
       )
-    )
     const isLong = buy.type === "long"
+    const isE0v1e = buy.type === "e0v1e"
 
-    const sellSignal = isLong ? sellLongSignal : sellShortSignal
+    const sellSignal = isLong
+      ? sellLongSignal
+      : isE0v1e
+      ? sellEovieSignal
+      : sellShortSignal
 
-    let { signal, indicators } = sellSignal(
+    let { signal, indicators } = sellSignal({
       buy,
       currentPrice,
       candles1,
       candles3,
+      candles5,
       candles15,
-      candles30
-    )
+      candles30,
+      candles240,
+    })
 
     const pnl = parseFloat(buy.qty) * (currentPrice - buy.price)
     const takeProfit = buy.take_profit && pnl > buy.take_profit
@@ -59,8 +75,16 @@ export const checkPositionsSell = async () => {
 
     if (takeProfit || stopLoss) {
       indicators = [
-        { name: "Stop loss", signal: boolToSignal(takeProfit ?? false) },
-        { name: "Take profit", signal: boolToSignal(takeProfit ?? false) },
+        {
+          name: "Stop loss",
+          signal: boolToSignal(stopLoss ?? false),
+          data: stopLoss,
+        },
+        {
+          name: "Take profit",
+          signal: boolToSignal(takeProfit ?? false),
+          data: takeProfit,
+        },
       ]
       signal = -1
     }

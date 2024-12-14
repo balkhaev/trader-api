@@ -1,4 +1,4 @@
-import { Candle } from "../../../types"
+import { Candle, Signal } from "../../../types"
 import { MetaSignal } from "../../bybit/types"
 import { supertrend } from "../indicators/supertrend"
 
@@ -14,7 +14,8 @@ export function getSupertrendSignal(
       indicators: [
         {
           name: `Need more candles (period ${period})`,
-          signal: initialArray.length,
+          signal: 0,
+          data: initialArray.length,
         },
       ],
     }
@@ -47,11 +48,13 @@ export function getSupertrendSignal(
   const indicators = [
     {
       name: `Was below (${period}, ${multiplier})`,
-      signal: wasBelow,
+      signal: 0 as Signal,
+      data: wasBelow,
     },
     {
       name: `Crossed up (${period}, ${multiplier})`,
-      signal: crossedUp,
+      signal: 0 as Signal,
+      data: crossedUp,
     },
   ]
 

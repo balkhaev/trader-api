@@ -1,22 +1,10 @@
-import { Analyze, Candle } from "../../../types"
 import { getSupertrendSignal } from "../../blackbox/signals/supertrend"
 import { getCrossingSignal, reverseSignal } from "../../blackbox/strategies"
-import { MetaSignal } from "../types"
+import { MetaSignal, SignalOpts, SignalSellOpts } from "../types"
 import { isAboveEMA } from "../../blackbox/indicators/ema"
-import { Tables } from "../../../database.types"
 import { boolToSignal } from "../utils"
 
 const BUY_SIGNAL_CANDLES_LIMIT = 10
-
-type SignalOpts = {
-  analysis: Analyze
-  currentPrice: number
-  candles1: Candle[]
-  candles3: Candle[]
-  candles15: Candle[]
-  candles30: Candle[]
-  candles240: Candle[]
-}
 
 export function buyShortSignal({
   analysis,
@@ -27,37 +15,37 @@ export function buyShortSignal({
   candles30,
   candles240,
 }: SignalOpts): MetaSignal {
-  const adx = boolToSignal(analysis.adx?.adx ? analysis.adx?.adx > 25 : false)
+  const adx = boolToSignal(analysis?.adx?.adx ? analysis.adx?.adx > 25 : false)
   const globalBullish = boolToSignal(isAboveEMA(candles240, 200).diff > 0)
   const { signal: st240min } = getSupertrendSignal(
     currentPrice,
     candles240,
     BUY_SIGNAL_CANDLES_LIMIT,
-    1
+    2
   )
   const { signal: st30min } = getSupertrendSignal(
     currentPrice,
     candles30,
     BUY_SIGNAL_CANDLES_LIMIT,
-    1
+    2
   )
   const { signal: st15min } = getSupertrendSignal(
     currentPrice,
     candles15,
     BUY_SIGNAL_CANDLES_LIMIT,
-    1
+    2
   )
   const { signal: st3min } = getSupertrendSignal(
     currentPrice,
     candles3,
     BUY_SIGNAL_CANDLES_LIMIT,
-    1
+    2
   )
   const { signal: st1min } = getSupertrendSignal(
     currentPrice,
     candles1,
     BUY_SIGNAL_CANDLES_LIMIT,
-    1
+    2
   )
 
   const st1Reversed = reverseSignal(st1min)
@@ -106,12 +94,12 @@ export function buyShortSignal({
   }
 }
 
-export function sellShortSignal(
-  buy: Tables<"buys">,
-  currentPrice: number,
-  candles1: Candle[],
-  candles3: Candle[]
-): MetaSignal {
+export function sellShortSignal({
+  buy,
+  currentPrice,
+  candles1,
+  candles3,
+}: SignalSellOpts): MetaSignal {
   const pnl = parseFloat(buy.qty) * (currentPrice - buy.price)
   const takeProfit = buy.take_profit && pnl > buy.take_profit
   const stopLoss = buy.stop_loss && pnl < buy.stop_loss

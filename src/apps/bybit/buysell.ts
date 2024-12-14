@@ -33,8 +33,9 @@ export const buy = async (symbol: string, usdt: number) => {
   }
 
   const buyedCount = buyedCoins?.length ?? 0
+  const countInWait = countWaitBuySymbols() - 1
 
-  if (countWaitBuySymbols() + buyedCount >= LIMIT_BUYS) {
+  if (countInWait + buyedCount >= LIMIT_BUYS) {
     rmWaitBuySymbol(symbol)
     return
   }
@@ -42,7 +43,7 @@ export const buy = async (symbol: string, usdt: number) => {
   const instrument = await fetchInstrumentInfo(symbol)
   const currentPrice = await fetchCurrentPrice(symbol)
   const basePrecision = instrument.lotSizeFilter.basePrecision.split(".")[1]
-  const precision = basePrecision ? 0 : basePrecision.length
+  const precision = basePrecision ? basePrecision.length : 0
   const qty = (usdt / currentPrice).toFixed(precision)
 
   if (parseFloat(instrument.lotSizeFilter.minOrderQty) > parseFloat(qty)) {
@@ -61,7 +62,6 @@ export const buy = async (symbol: string, usdt: number) => {
       marketUnit: "baseCoin",
     })
 
-    rmWaitBuySymbol(symbol)
     io.emit("buyed")
 
     return {
@@ -70,9 +70,10 @@ export const buy = async (symbol: string, usdt: number) => {
     }
   } catch (e) {
     console.log(instrument, e)
-    rmWaitBuySymbol(symbol)
 
     return null
+  } finally {
+    rmWaitBuySymbol(symbol)
   }
 }
 
