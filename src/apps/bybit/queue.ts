@@ -87,7 +87,7 @@ analyzeSymbolQueue.process(4, async (job) => {
   })
 
   return {
-    ...analysis30,
+    lastPrice: ticker.lastPrice,
     e0v1e,
     long,
     short,

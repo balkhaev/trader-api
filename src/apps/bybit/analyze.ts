@@ -64,7 +64,7 @@ analyzeSymbolQueue.on("completed", async (job) => {
       ? data.short
       : null
 
-  const isLongSignal = long?.signal === 1 // || e0v1e?.signal === 1
+  const isLongSignal = long?.signal === 1 || e0v1e?.signal === 1
   const buyType = isLongSignal ? "long" : "short"
   const buyApprove = isLongSignal || short?.signal === 1
   const symbol = job.returnvalue.symbol
@@ -91,9 +91,7 @@ analyzeSymbolQueue.on("completed", async (job) => {
 
     if (order) {
       const currentPrice = await fetchCurrentPrice(symbol)
-      const waitFor = isLongSignal
-        ? addMinutes(new Date(), 30).getTime()
-        : addMinutes(new Date(), 9).getTime()
+      const waitFor = addMinutes(new Date(), isLongSignal ? 10 : 5).getTime()
 
       const { error } = await supabase.from("buys").insert({
         price: currentPrice,
