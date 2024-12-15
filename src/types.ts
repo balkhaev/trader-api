@@ -33,11 +33,14 @@ export type Analyze = {
   lastPrice: number
   sma: number | null
   rsi: number | null
+  rsiFast: number | null
+  rsiSlow: number | null
   stochasticRsi: StochasticRSIOutput | null
   adx: ADXOutput | null
   macd: MACDOutput | null
   bollingerBands: BollingerBandsOutput | null
   cci: number | null
+  cti: number | null
   atr: number | null
   obv: number | null
   ema: number | null

@@ -12,10 +12,13 @@ import {
 } from "technicalindicators"
 import { Analyze, Candle } from "../../types"
 import { mom } from "./indicators/mom"
+import { calculateCTI } from "./indicators/cti"
 
 type IndicatorPeriods = {
   sma?: number
   rsi?: number
+  rsiFast?: number
+  rsiSlow?: number
   macdFast?: number
   macdSlow?: number
   macdSignal?: number
@@ -23,6 +26,7 @@ type IndicatorPeriods = {
   bollingerStdDev?: number
   stochasticRsi?: number
   adx?: number
+  cti?: number
   cci?: number
   atr?: number
   momentum?: number
@@ -32,6 +36,8 @@ type IndicatorPeriods = {
 const DEFAULT_PERIODS: Required<IndicatorPeriods> = {
   sma: 15,
   rsi: 14,
+  rsiSlow: 20,
+  rsiFast: 4,
   macdFast: 12,
   macdSlow: 26,
   macdSignal: 9,
@@ -39,7 +45,8 @@ const DEFAULT_PERIODS: Required<IndicatorPeriods> = {
   bollingerStdDev: 2,
   stochasticRsi: 14,
   adx: 14,
-  cci: 14,
+  cti: 20,
+  cci: 20,
   atr: 14,
   momentum: 10,
   ema: 20,
@@ -52,6 +59,8 @@ export function getTechnicalAnalyze(
   const {
     sma,
     rsi,
+    rsiFast,
+    rsiSlow,
     macdFast,
     macdSlow,
     macdSignal,
@@ -59,6 +68,7 @@ export function getTechnicalAnalyze(
     bollingerStdDev,
     stochasticRsi,
     adx,
+    cti,
     cci,
     atr,
     momentum,
@@ -70,10 +80,17 @@ export function getTechnicalAnalyze(
   const lows = candles.map((d) => d.low)
   const volumes = candles.map((d) => d.volume)
 
-  // Однострочные вычисления с деструктуризацией последнего значения
   const [lastSMA] = SMA.calculate({ values: prices, period: sma }).slice(-1)
+
   const [lastRSI] =
     RSI.calculate({ values: prices, period: rsi }).slice(-1) ?? []
+  const [lastRSISlow] =
+    RSI.calculate({ values: prices, period: rsiSlow }).slice(-1) ?? []
+  const [lastRSIFast] =
+    RSI.calculate({ values: prices, period: rsiFast }).slice(-1) ?? []
+
+  const [lastCTI] = calculateCTI(prices, cti).slice(-1) ?? []
+
   const [lastMACD] =
     MACD.calculate({
       values: prices,
@@ -83,12 +100,14 @@ export function getTechnicalAnalyze(
       SimpleMAOscillator: false,
       SimpleMASignal: false,
     }).slice(-1) ?? []
+
   const [lastBollinger] =
     BollingerBands.calculate({
       values: prices,
       period: bollinger,
       stdDev: bollingerStdDev,
     }).slice(-1) ?? []
+
   const [lastStochasticRsi] =
     StochasticRSI.calculate({
       values: prices,
@@ -97,6 +116,7 @@ export function getTechnicalAnalyze(
       kPeriod: 3,
       dPeriod: 3,
     }).slice(-1) ?? []
+
   const [lastADX] =
     ADX.calculate({ close: prices, high: highs, low: lows, period: adx }).slice(
       -1
@@ -120,7 +140,6 @@ export function getTechnicalAnalyze(
 
   const lastPrice = prices[prices.length - 1]
 
-  // Определение тренда
   let trend: "Bullish" | "Bearish" | "Neutral" = "Neutral"
   if (lastRSI !== undefined && lastMACD?.histogram !== undefined) {
     if (lastRSI > 50 && lastMACD.histogram > 0) {
@@ -134,11 +153,14 @@ export function getTechnicalAnalyze(
     lastPrice,
     sma: lastSMA ?? null,
     rsi: lastRSI ?? null,
+    rsiSlow: lastRSISlow ?? null,
+    rsiFast: lastRSIFast ?? null,
     stochasticRsi: lastStochasticRsi ?? null,
     adx: lastADX ?? null,
     macd: lastMACD ?? null,
     bollingerBands: lastBollinger ?? null,
     cci: lastCCI ?? null,
+    cti: lastCTI.cti ?? null,
     atr: lastATR ?? null,
     obv: lastOBV ?? null,
     momentum: lastMomentum ?? null,

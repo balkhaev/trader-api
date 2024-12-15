@@ -5,6 +5,11 @@ import { getCrossingSignal } from "../../blackbox/strategies"
 import { MetaSignal, SignalOpts, SignalSellOpts } from "../types"
 import { boolToSignal } from "../utils"
 
+const BUY_RSI_FAST_32 = 40
+const BUY_RSI_32 = 42
+const BUY_SMA15_32 = 0.973
+const BUY_CTI_32 = 0.69
+
 export function buyEovieSignal({
   currentPrice,
   candles30,
@@ -12,16 +17,19 @@ export function buyEovieSignal({
 }: SignalOpts): MetaSignal {
   const analyze = getTechnicalAnalyze(candles30)
 
+  // We assume getTechnicalAnalyze returns rsi, rsi_fast, rsi_slow, cti, sma and so forth.
+  // If not, you need to modify getTechnicalAnalyze to also return these values.
   if (
     !analyze.rsi ||
-    !analyze.stochasticRsi ||
-    !analyze.macd ||
     !analyze.sma ||
-    !analyze.cci
+    !analyze.rsiFast ||
+    !analyze.rsiSlow ||
+    !analyze.cti
   ) {
     return { signal: 0, indicators: [{ name: "Insufficient Data", signal: 0 }] }
   }
 
+  // Get global trend from supertrend (as an example)
   const { signal: globalTrend } = getSupertrendSignal(
     currentPrice,
     candles240,
@@ -29,45 +37,63 @@ export function buyEovieSignal({
     2
   )
 
+  // Check for bullish trend (above EMA200)
   const isBullishTrend = isAboveEMA(candles240, 200).above
 
-  const buyConditions = [
-    analyze.rsi > 28,
-    analyze.rsi < 50,
-    analyze.cci < -100,
-    currentPrice < analyze.sma * 0.96,
-    analyze.stochasticRsi.stochRSI < 20,
+  // To replicate (rsi_slow < rsi_slow.shift(1)) from python, we need previous candle's rsi_slow.
+  // Assuming we can call getTechnicalAnalyze on previous candles.
+  // If not, you'll need a different approach (like computing indicators for all candles and taking the second last).
+  const prevAnalyze = getTechnicalAnalyze(candles30.slice(0, -1))
+  if (!prevAnalyze.rsiSlow) {
+    return {
+      signal: 0,
+      indicators: [{ name: "Insufficient Data for prev RSI slow", signal: 0 }],
+    }
+  }
+
+  const rsiSlowDecreasing = analyze.rsiSlow < prevAnalyze.rsiSlow
+
+  // Conditions taken from the Python strategy
+  const conditions = [
+    rsiSlowDecreasing,
+    analyze.rsiFast < BUY_RSI_FAST_32,
+    analyze.rsi > BUY_RSI_32,
+    currentPrice < analyze.sma * BUY_SMA15_32,
+    analyze.cti < BUY_CTI_32,
   ]
 
-  const buySignal =
-    buyConditions.every(Boolean) && globalTrend && isBullishTrend
+  const buySignal = conditions.every(Boolean) && globalTrend && isBullishTrend
 
   return {
     signal: getCrossingSignal([boolToSignal(buySignal), globalTrend]),
     indicators: [
+      { name: "global trend", signal: globalTrend },
       {
-        name: "Global trend",
-        signal: globalTrend,
+        name: "rsi_slow decreasing",
+        signal: boolToSignal(rsiSlowDecreasing),
+        data: { current: analyze.rsiSlow, prev: prevAnalyze.rsiSlow },
       },
       {
-        name: "RSI within range",
-        signal: boolToSignal(analyze.rsi > 28 && analyze.rsi < 50),
+        name: "rsi_fast < BUY_RSI_FAST_32",
+        signal: boolToSignal(analyze.rsiFast < BUY_RSI_FAST_32),
+        data: analyze.rsiFast,
       },
       {
-        name: "Price below SMA",
-        signal: boolToSignal(currentPrice < analyze.sma * 0.96),
+        name: "rsi > BUY_RSI_32",
+        signal: boolToSignal(analyze.rsi > BUY_RSI_32),
+        data: analyze.rsi,
       },
       {
-        name: "Stochastic RSI Oversold",
-        signal: boolToSignal(analyze.stochasticRsi.stochRSI < 20),
+        name: "price < sma * BUY_SMA15_32",
+        signal: boolToSignal(currentPrice < analyze.sma * BUY_SMA15_32),
+        data: { price: currentPrice, sma: analyze.sma },
       },
-      { name: "Global Trend Bullish", signal: boolToSignal(globalTrend) },
       {
-        name: "CCI Oversold",
-        signal: boolToSignal(analyze.cci < -100),
-        data: analyze.cci,
+        name: "cti < BUY_CTI_32",
+        signal: boolToSignal(analyze.cti < BUY_CTI_32),
+        data: analyze.cti,
       },
-      { name: "Above EMA 200", signal: boolToSignal(isBullishTrend) },
+      { name: "bullish trend", signal: boolToSignal(isBullishTrend) },
     ],
   }
 }
