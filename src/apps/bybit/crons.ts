@@ -17,6 +17,17 @@ const CANDLES_TO_FETCH_FOR_SELL: KlineIntervalV3[] = [
   "240",
 ]
 
+const TRAILING_STOP = process.env.TRAILING_PROFIT === "true"
+const TRAILING_STOP_POSITIVE = parseFloat(
+  process.env.TRAILING_STOP_POSITIVE ?? "0.002"
+)
+const TRAILING_STOP_POSITIVE_OFFSET = parseFloat(
+  process.env.TRAILING_STOP_POSITIVE_OFFSET ?? "0.05"
+)
+
+// Словарь, чтобы хранить состояние трейлинга для сделок
+const trailingActivated: Map<number, boolean> = new Map()
+
 export const checkPositionsSell = async () => {
   console.log("SELL CHECK", format(new Date(), "yyyy-MM-dd HH:mm:ss"))
 
@@ -46,9 +57,14 @@ export const checkPositionsSell = async () => {
       )
 
     const pnl = parseFloat(buy.qty) * (currentPrice - buy.price)
+    const currentProfitRatio = (currentPrice - buy.price) / buy.price // относительная прибыль
+
     const takeProfit =
-      typeof buy.take_profit === "number" && pnl > buy.take_profit
-    const stopLoss = typeof buy.stop_loss === "number" && pnl < buy.stop_loss
+      typeof buy.take_profit === "number" &&
+      currentProfitRatio > buy.take_profit
+
+    const stopLoss =
+      typeof buy.stop_loss === "number" && currentProfitRatio < buy.stop_loss
 
     const isLong = buy.type === "long"
     const isE0v1e = buy.type === "e0v1e"
@@ -71,6 +87,49 @@ export const checkPositionsSell = async () => {
       candles240,
     })
 
+    const pos = {
+      sell: 1,
+    }
+
+    // Логика трейлинга
+    // Если трейлинг включён и сделка ещё не продана
+    if (!takeProfit && !stopLoss && TRAILING_STOP && signal !== -1) {
+      // Проверяем достигли ли мы уровня оффсета
+      const alreadyActivated = trailingActivated.get(buy.id) || false
+
+      // Если ещё не активировано трейление и достигли оффсета прибыли
+      if (
+        !alreadyActivated &&
+        currentProfitRatio >= TRAILING_STOP_POSITIVE_OFFSET
+      ) {
+        trailingActivated.set(buy.id, true)
+        console.log(`Trailing activated for trade ${buy.id}`)
+      }
+
+      // Если трейлинг активирован
+      if (trailingActivated.get(buy.id)) {
+        // Если нужно трейлить только после достижения оффсета, он уже достигнут
+        // Проверяем, не упала ли прибыль ниже TRAILING_STOP_POSITIVE
+        if (currentProfitRatio < TRAILING_STOP_POSITIVE) {
+          console.log(`Exiting trade ${buy.id} by trailing stop`)
+          pos.sell = TRAILING_STOP_POSITIVE_OFFSET
+          signal = -1
+          indicators.push({
+            name: "Trailing Stop Exit",
+            signal: boolToSignal(true),
+            data: { currentProfitRatio },
+          })
+        } else {
+          // Прибыль всё ещё выше TRAILING_STOP_POSITIVE, держим сделку
+          indicators.push({
+            name: "Trailing Stop Active",
+            signal: boolToSignal(true),
+            data: { currentProfitRatio },
+          })
+        }
+      }
+    }
+
     if (takeProfit || stopLoss) {
       indicators = [
         {
@@ -83,6 +142,7 @@ export const checkPositionsSell = async () => {
           signal: boolToSignal(takeProfit ?? false),
           data: pnl,
         },
+        ...indicators,
       ]
       signal = -1
     }
@@ -99,7 +159,7 @@ export const checkPositionsSell = async () => {
 
     if (signal === -1) {
       try {
-        await sell(buy.coin)
+        await sell(buy.coin, pos.sell)
       } catch (e) {
         console.log("error in sell", e)
         return
@@ -125,7 +185,12 @@ export const checkPositionsSell = async () => {
       })
 
       if (error) {
-        console.error("in long sell cron", error)
+        console.error("in sell cron", error)
+      }
+
+      // Если сделка закрывается, удаляем её из trailingActivated, если она была там
+      if (trailingActivated.has(buy.id)) {
+        trailingActivated.delete(buy.id)
       }
     }
   }

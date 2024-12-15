@@ -1,13 +1,13 @@
-export const LIMIT_BUYS = 4
+export const LIMIT_BUYS = parseInt(process.env.LIMIT_BUYS!)
 
 export const longPos = {
-  buy: 7,
-  sell: -0.3,
-  profit: 0.1,
+  buy: parseInt(process.env.LONG_BUY_USD!),
+  stopLoss: parseInt(process.env.STOP_LOSS_LONG_POST!),
+  takeProfit: parseInt(process.env.TAKE_PROFIT_LONG_POS!),
 }
 
 export const shortPos = {
-  buy: 5,
-  sell: -0.3,
-  profit: 0.1,
+  buy: parseInt(process.env.SHORT_BUY_USD!),
+  stopLoss: parseInt(process.env.STOP_LOSS_SHORT_POS!),
+  takeProfit: parseInt(process.env.TAKE_PROFIT_SHORT_POS!),
 }

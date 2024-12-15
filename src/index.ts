@@ -20,7 +20,7 @@ async function main() {
   /**
    * Покупаем
    */
-  if (process.env.BUYS_ENABLED === "1") {
+  if (process.env.BUYS_ENABLED === "true") {
     analyzeSymbolQueue.on("drained", async () => {
       if ((await analyzeSymbolQueue.count()) === 0) {
         console.log("NEW ANALYZE")
@@ -36,7 +36,9 @@ async function main() {
   /**
    * Продаем
    */
-  setInterval(checkPositionsSell, 15000)
+  if (process.env.SELLS_ENABLED === "true") {
+    setInterval(checkPositionsSell, 15000)
+  }
 }
 
 main().catch((err) => {

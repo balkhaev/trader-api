@@ -102,8 +102,8 @@ analyzeSymbolQueue.on("completed", async (job) => {
         type: e0v1e?.signal === 1 ? "e0v1e" : buyType,
         coin: symbol.slice(0, -4),
         wait_for: waitFor,
-        take_profit: pos.profit,
-        stop_loss: pos.sell,
+        take_profit: pos.takeProfit,
+        stop_loss: pos.stopLoss,
       })
 
       if (error) {

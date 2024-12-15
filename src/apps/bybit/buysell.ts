@@ -78,7 +78,7 @@ export const buy = async (symbol: string, usdt: number) => {
   }
 }
 
-export const sell = async (coin: string, percent = 100) => {
+export const sell = async (coin: string, ratio = 1) => {
   console.log("try sell", coin)
 
   const symbol = coin + process.env.BASE_CURRENCY
@@ -101,7 +101,7 @@ export const sell = async (coin: string, percent = 100) => {
   const basePrecision = instrument.lotSizeFilter.basePrecision.split(".")[1]
   const precision = basePrecision ? basePrecision.length : 0
 
-  const qty = parseFloat(buyedCoin.walletBalance) * (percent / 100)
+  const qty = parseFloat(buyedCoin.walletBalance) * ratio
   const factor = Math.pow(10, precision)
   const toSell = Math.floor(qty * factor) / factor
 
