@@ -42,7 +42,7 @@ const DEFAULT_PERIODS: Required<IndicatorPeriods> = {
   cci: 14,
   atr: 14,
   momentum: 10,
-  ema: 5,
+  ema: 20,
 }
 
 export function getTechnicalAnalyze(

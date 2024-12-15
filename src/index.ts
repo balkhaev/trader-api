@@ -22,6 +22,7 @@ async function main() {
    */
   analyzeSymbolQueue.on("drained", async () => {
     if ((await analyzeSymbolQueue.count()) === 0) {
+      console.log("NEW ANALYZE")
       analyzeBybit()
     }
   })
