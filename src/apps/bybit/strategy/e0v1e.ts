@@ -71,7 +71,7 @@ export function buyEovieSignal({
       {
         name: "rsi_slow decreasing",
         signal: boolToSignal(rsiSlowDecreasing),
-        data: { current: analyze.rsiSlow, prev: prevAnalyze.rsiSlow },
+        data: `rsiSlow: { current: ${analyze.rsiSlow}, prev: ${prevAnalyze.rsiSlow} }`,
       },
       {
         name: "rsi_fast < BUY_RSI_FAST_32",
@@ -86,7 +86,7 @@ export function buyEovieSignal({
       {
         name: "price < sma * BUY_SMA15_32",
         signal: boolToSignal(currentPrice < analyze.sma * BUY_SMA15_32),
-        data: { price: currentPrice, sma: analyze.sma },
+        data: `price: ${currentPrice}, sma: ${analyze.sma} `,
       },
       {
         name: "cti < BUY_CTI_32",
