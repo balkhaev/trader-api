@@ -238,7 +238,7 @@ export function sellEovieSignal({
       },
       {
         name: "minProfit",
-        signal: boolToSignal(minProfit > -0.1),
+        signal: boolToSignal(minProfit),
         data: minProfit,
       },
       {
