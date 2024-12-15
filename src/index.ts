@@ -20,7 +20,7 @@ async function main() {
   /**
    * Покупаем
    */
-  if (process.env.NODE_ENV === "development") {
+  if (process.env.BUYS_ENABLED === "1") {
     analyzeSymbolQueue.on("drained", async () => {
       if ((await analyzeSymbolQueue.count()) === 0) {
         console.log("NEW ANALYZE")
