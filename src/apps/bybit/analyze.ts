@@ -64,9 +64,9 @@ analyzeSymbolQueue.on("completed", async (job) => {
       ? data.short
       : null
 
-  const isLongSignal = long?.signal === 1 || e0v1e?.signal === 1
+  const isLongSignal = long?.signal === 1 // || e0v1e?.signal === 1
   const buyType = isLongSignal ? "long" : "short"
-  const buyApprove = isLongSignal // || short?.signal === 1
+  const buyApprove = isLongSignal || short?.signal === 1
   const symbol = job.returnvalue.symbol
 
   if (buyApprove) {
@@ -80,7 +80,7 @@ analyzeSymbolQueue.on("completed", async (job) => {
     if (lastBuy) {
       if (
         !lastBuy.selled ||
-        differenceInMinutes(new Date(), lastBuy.created_at) < 5
+        differenceInMinutes(new Date(), +lastBuy.created_at) < 60
       ) {
         return
       }
@@ -99,7 +99,7 @@ analyzeSymbolQueue.on("completed", async (job) => {
         price: currentPrice,
         symbol: symbol,
         order_id: order.orderId,
-        qty: order.qty,
+        qty: order.qty.toString(),
         indicators: job.returnvalue[buyType].indicators,
         type: e0v1e?.signal === 1 ? "e0v1e" : buyType,
         coin: symbol.slice(0, -4),

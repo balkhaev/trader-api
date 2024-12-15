@@ -3,11 +3,11 @@ import { getCrossingSignal, reverseSignal } from "../../blackbox/strategies"
 import { MetaSignal, SignalOpts, SignalSellOpts } from "../types"
 import { isAboveEMA } from "../../blackbox/indicators/ema"
 import { boolToSignal } from "../utils"
+import { getTechnicalAnalyze } from "../../blackbox/indicators"
 
 const BUY_SIGNAL_CANDLES_LIMIT = 10
 
 export function buyShortSignal({
-  analysis,
   currentPrice,
   candles1,
   candles3,
@@ -15,25 +15,22 @@ export function buyShortSignal({
   candles30,
   candles240,
 }: SignalOpts): MetaSignal {
-  const adx = boolToSignal(analysis?.adx?.adx ? analysis.adx?.adx > 25 : false)
-  const globalBullish = boolToSignal(isAboveEMA(candles240, 200).diff > 0)
-  const { signal: st240min } = getSupertrendSignal(
-    currentPrice,
-    candles240,
-    BUY_SIGNAL_CANDLES_LIMIT,
-    2
+  const analyze = getTechnicalAnalyze(candles15)
+
+  if (!analyze?.bollingerBands) {
+    return { signal: 0, indicators: [{ name: "Insufficient Data", signal: 0 }] }
+  }
+
+  const bollingerBands = boolToSignal(
+    currentPrice > analyze?.bollingerBands?.middle &&
+      currentPrice > analyze?.bollingerBands.upper
   )
-  const { signal: st30min } = getSupertrendSignal(
-    currentPrice,
-    candles30,
-    BUY_SIGNAL_CANDLES_LIMIT,
-    2
+  const adx = boolToSignal(analyze?.adx?.adx ? analyze.adx?.adx > 25 : false)
+  const isGoldenCross = boolToSignal(
+    isAboveEMA(candles30, 50).diff > isAboveEMA(candles30, 200).diff
   )
-  const { signal: st15min } = getSupertrendSignal(
-    currentPrice,
-    candles15,
-    BUY_SIGNAL_CANDLES_LIMIT,
-    2
+  const isStrongBullish = boolToSignal(
+    currentPrice > isAboveEMA(candles30, 200).diff
   )
   const { signal: st3min } = getSupertrendSignal(
     currentPrice,
@@ -55,11 +52,9 @@ export function buyShortSignal({
     signal: getCrossingSignal([
       st1Reversed,
       st3Reversed,
-      st15min,
-      st30min,
-      st240min,
       adx,
-      globalBullish,
+      isGoldenCross,
+      isStrongBullish,
     ]),
     indicators: [
       {
@@ -71,24 +66,20 @@ export function buyShortSignal({
         signal: st3Reversed,
       },
       {
-        name: "Supertrend 15 min",
-        signal: st15min,
+        name: "BB OK",
+        signal: bollingerBands,
       },
       {
-        name: "Supertrend 30 min",
-        signal: st30min,
+        name: "Is golden cross",
+        signal: isGoldenCross,
       },
       {
-        name: "Supertrend 240 min",
-        signal: st240min,
+        name: "Is strong bullish",
+        signal: isStrongBullish,
       },
       {
         name: "Powered ADX > 25",
         signal: adx,
-      },
-      {
-        name: "EMA 240min 200 > 0",
-        signal: globalBullish,
       },
     ],
   }

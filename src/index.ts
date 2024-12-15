@@ -18,22 +18,20 @@ async function main() {
   })
 
   /**
-   * Покупаем только на локальном деве
+   * Покупаем
    */
-  if (process.env.NODE_ENV === "development") {
-    analyzeSymbolQueue.on("drained", async () => {
-      if ((await analyzeSymbolQueue.count()) === 0) {
-        analyzeBybit()
-      }
-    })
-
+  analyzeSymbolQueue.on("drained", async () => {
     if ((await analyzeSymbolQueue.count()) === 0) {
       analyzeBybit()
     }
+  })
+
+  if ((await analyzeSymbolQueue.count()) === 0) {
+    analyzeBybit()
   }
 
   /**
-   * Продаем везде
+   * Продаем
    */
   setInterval(checkPositionsSell, 15000)
 }

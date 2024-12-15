@@ -70,20 +70,21 @@ export const checkPositionsSell = async () => {
     })
 
     const pnl = parseFloat(buy.qty) * (currentPrice - buy.price)
-    const takeProfit = buy.take_profit && pnl > buy.take_profit
-    const stopLoss = buy.stop_loss && pnl < buy.stop_loss
+    const takeProfit =
+      typeof buy.take_profit === "number" && pnl > buy.take_profit
+    const stopLoss = typeof buy.stop_loss === "number" && pnl < buy.stop_loss
 
     if (takeProfit || stopLoss) {
       indicators = [
         {
           name: "Stop loss",
           signal: boolToSignal(stopLoss ?? false),
-          data: stopLoss,
+          data: pnl,
         },
         {
           name: "Take profit",
           signal: boolToSignal(takeProfit ?? false),
-          data: takeProfit,
+          data: pnl,
         },
       ]
       signal = -1

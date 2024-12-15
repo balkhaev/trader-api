@@ -44,9 +44,10 @@ export const buy = async (symbol: string, usdt: number) => {
   const currentPrice = await fetchCurrentPrice(symbol)
   const basePrecision = instrument.lotSizeFilter.basePrecision.split(".")[1]
   const precision = basePrecision ? basePrecision.length : 0
-  const qty = (usdt / currentPrice).toFixed(precision)
+  const factor = Math.pow(10, precision)
+  const qty = Math.floor((usdt / currentPrice) * factor) / factor
 
-  if (parseFloat(instrument.lotSizeFilter.minOrderQty) > parseFloat(qty)) {
+  if (parseFloat(instrument.lotSizeFilter.minOrderQty) > qty) {
     rmWaitBuySymbol(symbol)
     return null
   }
@@ -58,7 +59,7 @@ export const buy = async (symbol: string, usdt: number) => {
       symbol,
       side: "Buy",
       orderType: "Market",
-      qty,
+      qty: qty.toString(),
       marketUnit: "baseCoin",
     })
 
@@ -96,8 +97,15 @@ export const sell = async (coin: string, percent = 100) => {
     throw new Error("Нет открытой позиции для продажи.")
   }
 
+  const instrument = await fetchInstrumentInfo(symbol)
+  const basePrecision = instrument.lotSizeFilter.basePrecision.split(".")[1]
+  const precision = basePrecision ? basePrecision.length : 0
+
   const qty = parseFloat(buyedCoin.walletBalance) * (percent / 100)
-  const toSell = Math.floor(qty * 10) / 10
+  const factor = Math.pow(10, precision)
+  const toSell = Math.floor(qty * factor) / factor
+
+  console.log(symbol, "selling", toSell, instrument.lotSizeFilter.basePrecision)
 
   const order = await createOrder({
     symbol,
@@ -107,7 +115,7 @@ export const sell = async (coin: string, percent = 100) => {
     marketUnit: "baseCoin",
   })
 
-  console.log(symbol, "selled", toSell)
+  console.log(symbol, "selled")
 
   io.emit("selled")
 

@@ -88,7 +88,7 @@ export async function fetchBuyedCoins() {
   return result.list[0].coin.filter(
     (el) =>
       el.coin.toUpperCase() !== process.env.BASE_CURRENCY &&
-      parseInt(el.usdValue) > 0.5
+      parseInt(el.usdValue) > 0.3
   )
 }
 
