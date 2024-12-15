@@ -6,6 +6,7 @@ import { server, io } from "./server"
 import { checkPositionsSell } from "./apps/bybit/crons"
 import { analyzeSymbolQueue } from "./apps/bybit/queue"
 import analyzeBybit from "./apps/bybit/analyze"
+import { LIMIT_BUYS, longPos, shortPos } from "./apps/bybit/consts"
 
 const PORT = process.env.PORT || 8000
 
@@ -15,6 +16,7 @@ async function main() {
     console.log("NODE_ENV:", process.env.NODE_ENV)
     console.log("BASE_CURRENCY:", process.env.BASE_CURRENCY)
     console.log("REDIS_HOST:", process.env.REDIS_HOST)
+    console.log({ longPos, shortPos, LIMIT_BUYS })
   })
 
   /**
