@@ -32,10 +32,8 @@ type IndicatorPeriods = {
   atr?: number
   momentum?: number
   ema?: number
-  // Добавим параметры для MA120 и MA240, если захотим сделать настраиваемыми
   ma120?: number
   ma240?: number
-  // Для fastk (stochastic) зададим параметры
   stochPeriod?: number
   stochSignal?: number
 }
@@ -57,8 +55,8 @@ const DEFAULT_PERIODS: Required<IndicatorPeriods> = {
   atr: 14,
   momentum: 10,
   ema: 20,
-  ma120: 120,
-  ma240: 240,
+  ma120: 50,
+  ma240: 25,
   stochPeriod: 5,
   stochSignal: 3,
 }

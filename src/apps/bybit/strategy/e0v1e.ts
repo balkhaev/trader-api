@@ -198,17 +198,17 @@ export function sellEovieSignal({
   let reason = ""
 
   if (fastkProfitSell) {
-    finalSignal = 1
+    finalSignal = -1
     reason = "fastk_profit_sell"
   } else if (cciLossSell) {
-    finalSignal = 1
+    finalSignal = -1
     reason = "cci_loss_sell"
   } else if (ma120SellFast) {
-    finalSignal = 1
+    finalSignal = -1
     reason = "ma120_sell_fast"
     TMP_HOLD1.delete(tradeId)
   } else if (ma120Sell) {
-    finalSignal = 1
+    finalSignal = -1
     reason = "ma120_sell"
     TMP_HOLD.delete(tradeId)
   }
@@ -216,7 +216,11 @@ export function sellEovieSignal({
   return {
     signal: finalSignal,
     indicators: [
-      { name: "Reason", signal: boolToSignal(finalSignal === 1), data: reason },
+      {
+        name: "Reason",
+        signal: finalSignal,
+        data: reason,
+      },
       {
         name: "fastk",
         signal: boolToSignal(analyze.fastk > SELL_FASTX),
