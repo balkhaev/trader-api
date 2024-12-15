@@ -20,15 +20,17 @@ async function main() {
   /**
    * Покупаем
    */
-  analyzeSymbolQueue.on("drained", async () => {
+  if (process.env.NODE_ENV === "development") {
+    analyzeSymbolQueue.on("drained", async () => {
+      if ((await analyzeSymbolQueue.count()) === 0) {
+        console.log("NEW ANALYZE")
+        analyzeBybit()
+      }
+    })
+
     if ((await analyzeSymbolQueue.count()) === 0) {
-      console.log("NEW ANALYZE")
       analyzeBybit()
     }
-  })
-
-  if ((await analyzeSymbolQueue.count()) === 0) {
-    analyzeBybit()
   }
 
   /**

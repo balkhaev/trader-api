@@ -38,4 +38,5 @@ export type SignalOpts = {
 
 export type SignalSellOpts = SignalOpts & {
   buy: Tables<"buys">
+  currentProfit: number
 }

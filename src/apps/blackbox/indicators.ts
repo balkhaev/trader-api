@@ -9,6 +9,7 @@ import {
   RSI,
   SMA,
   StochasticRSI,
+  Stochastic,
 } from "technicalindicators"
 import { Analyze, Candle } from "../../types"
 import { mom } from "./indicators/mom"
@@ -31,6 +32,12 @@ type IndicatorPeriods = {
   atr?: number
   momentum?: number
   ema?: number
+  // Добавим параметры для MA120 и MA240, если захотим сделать настраиваемыми
+  ma120?: number
+  ma240?: number
+  // Для fastk (stochastic) зададим параметры
+  stochPeriod?: number
+  stochSignal?: number
 }
 
 const DEFAULT_PERIODS: Required<IndicatorPeriods> = {
@@ -50,6 +57,10 @@ const DEFAULT_PERIODS: Required<IndicatorPeriods> = {
   atr: 14,
   momentum: 10,
   ema: 20,
+  ma120: 120,
+  ma240: 240,
+  stochPeriod: 5,
+  stochSignal: 3,
 }
 
 export function getTechnicalAnalyze(
@@ -73,6 +84,10 @@ export function getTechnicalAnalyze(
     atr,
     momentum,
     ema,
+    ma120,
+    ma240,
+    stochPeriod,
+    stochSignal,
   } = { ...DEFAULT_PERIODS, ...periods }
 
   const prices = candles.map((d) => d.close)
@@ -80,7 +95,12 @@ export function getTechnicalAnalyze(
   const lows = candles.map((d) => d.low)
   const volumes = candles.map((d) => d.volume)
 
-  const [lastSMA] = SMA.calculate({ values: prices, period: sma }).slice(-1)
+  const [lastSMA] =
+    SMA.calculate({ values: prices, period: sma }).slice(-1) ?? []
+  const [lastMa120] =
+    SMA.calculate({ values: prices, period: ma120 }).slice(-1) ?? []
+  const [lastMa240] =
+    SMA.calculate({ values: prices, period: ma240 }).slice(-1) ?? []
 
   const [lastRSI] =
     RSI.calculate({ values: prices, period: rsi }).slice(-1) ?? []
@@ -117,6 +137,17 @@ export function getTechnicalAnalyze(
       dPeriod: 3,
     }).slice(-1) ?? []
 
+  // Рассчитываем fastk с помощью стохастика (аналог STOCHF из Python)
+  const stochValues = Stochastic.calculate({
+    high: highs,
+    low: lows,
+    close: prices,
+    period: stochPeriod,
+    signalPeriod: stochSignal,
+  })
+  const lastStoch = stochValues.slice(-1)[0]
+  const fastk = lastStoch ? lastStoch.k : null
+
   const [lastADX] =
     ADX.calculate({ close: prices, high: highs, low: lows, period: adx }).slice(
       -1
@@ -133,10 +164,7 @@ export function getTechnicalAnalyze(
     OBV.calculate({ close: prices, volume: volumes }).slice(-1) ?? []
   const [lastMomentum] = mom(prices, momentum).slice(-1) ?? []
   const [lastEma] =
-    EMA.calculate({
-      values: prices,
-      period: ema,
-    }).slice(-1) ?? []
+    EMA.calculate({ values: prices, period: ema }).slice(-1) ?? []
 
   const lastPrice = prices[prices.length - 1]
 
@@ -165,6 +193,9 @@ export function getTechnicalAnalyze(
     obv: lastOBV ?? null,
     momentum: lastMomentum ?? null,
     ema: lastEma ?? null,
+    ma120: lastMa120 ?? null,
+    ma240: lastMa240 ?? null,
+    fastk,
     trend,
   }
 }

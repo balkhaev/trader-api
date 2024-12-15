@@ -1,12 +1,7 @@
 import { fetchCurrentPrice, fetchKline, fetchTradeHistory } from "./sdk/methods"
 import { sell } from "./buysell"
 import { sellLongSignal } from "./strategy/long"
-import {
-  differenceInMinutes,
-  format,
-  formatDistanceToNow,
-  isFuture,
-} from "date-fns"
+import { format, formatDistanceToNow, isFuture } from "date-fns"
 import { KlineIntervalV3 } from "bybit-api"
 import { supabase } from "../../lib/supabase"
 import { sellShortSignal } from "./strategy/short"
@@ -49,6 +44,12 @@ export const checkPositionsSell = async () => {
           fetchKline({ symbol, interval })
         )
       )
+
+    const pnl = parseFloat(buy.qty) * (currentPrice - buy.price)
+    const takeProfit =
+      typeof buy.take_profit === "number" && pnl > buy.take_profit
+    const stopLoss = typeof buy.stop_loss === "number" && pnl < buy.stop_loss
+
     const isLong = buy.type === "long"
     const isE0v1e = buy.type === "e0v1e"
 
@@ -61,6 +62,7 @@ export const checkPositionsSell = async () => {
     let { signal, indicators } = sellSignal({
       buy,
       currentPrice,
+      currentProfit: pnl,
       candles1,
       candles3,
       candles5,
@@ -68,11 +70,6 @@ export const checkPositionsSell = async () => {
       candles30,
       candles240,
     })
-
-    const pnl = parseFloat(buy.qty) * (currentPrice - buy.price)
-    const takeProfit =
-      typeof buy.take_profit === "number" && pnl > buy.take_profit
-    const stopLoss = typeof buy.stop_loss === "number" && pnl < buy.stop_loss
 
     if (takeProfit || stopLoss) {
       indicators = [
@@ -133,11 +130,3 @@ export const checkPositionsSell = async () => {
     }
   }
 }
-
-// export const analyzeBybitCron = new CronJob(
-//   "*/3 * * * *",
-//   async () => {
-//     analyzeBybit()
-//   },
-//   null
-// )
