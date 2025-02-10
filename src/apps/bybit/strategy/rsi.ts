@@ -1,5 +1,4 @@
 import { getSupertrendSignal } from "../../blackbox/signals/supertrend"
-import { getCrossingSignal } from "../../blackbox/utils"
 import { MACD } from "technicalindicators"
 import { MetaSignal, SignalOpts, SignalSellOpts } from "../types"
 import {
@@ -12,7 +11,7 @@ import { boolToSignal } from "../utils"
 
 const BUY_SIGNAL_CANDLES_LIMIT = 10
 
-export function buyLongSignal({
+export function buyRsiSignal({
   analysis,
   currentPrice,
   candles3,
@@ -27,6 +26,7 @@ export function buyLongSignal({
     2
   )
 
+  // Проверяем наличие необходимых данных
   if (
     !globalTrend ||
     !analysis?.macd?.histogram ||
@@ -38,7 +38,8 @@ export function buyLongSignal({
     return { signal: 0, indicators: [{ name: "Insufficient Data", signal: 0 }] }
   }
 
-  const isBullishTrend = isAboveEMA(candles240, 200)
+  // Проверяем глобальный бычий тренд по EMA200
+  const { above: isBullishTrend } = isAboveEMA(candles240, 200)
 
   if (!isBullishTrend) {
     return {
@@ -47,13 +48,7 @@ export function buyLongSignal({
     }
   }
 
-  if (!isVolumeIncreasing(candles15)) {
-    return {
-      signal: 0,
-      indicators: [{ name: "Volume not increasing", signal: 0 }],
-    }
-  }
-  // Проверка краткосрочного тренда на 3-минутных свечах
+  // Проверяем краткосрочный тренд на 3-минутных свечах
   const { signal: shortTrend } = getSupertrendSignal(
     currentPrice,
     candles3,
@@ -68,6 +63,7 @@ export function buyLongSignal({
     }
   }
 
+  // Расчёт MACD для 30-минутного таймфрейма
   const macd = MACD.calculate({
     values: candles30.map((candle) => candle.close),
     fastPeriod: 8,
@@ -81,25 +77,37 @@ export function buyLongSignal({
     candles30,
     macd.map((m) => m.histogram!)
   )
-
   const volumeIncreasing = isVolumeIncreasing(candles30)
   const adxPower = analysis.adx.adx > 25
-  const aboveEMA = isAboveEMA(candles240, 200).above
-  const notWeakRSI = analysis.rsi > 30
+  const aboveEMA = isBullishTrend // Уже определено выше
+  const rsiOversold = analysis.rsi < 30
   const stochiRSI = analysis.stochasticRsi.stochRSI < 20
   const bullishEngulfing = isBullishEngulfing(candles15)
 
+  // Считаем количество подтверждающих сигналов
+  const confirmSignals = [
+    rsiOversold,
+    bullishDivergence,
+    volumeIncreasing,
+    adxPower,
+    aboveEMA,
+    stochiRSI,
+    bullishEngulfing,
+  ]
+
+  const trueCount = confirmSignals.filter(Boolean).length
+
+  // Нам нужно минимум 2 подтверждающих сигнала помимо RSI
+  const finalSignal = trueCount >= 2 ? 1 : 0
+
   return {
-    signal: boolToSignal(
-      bullishDivergence &&
-        volumeIncreasing &&
-        adxPower &&
-        aboveEMA &&
-        notWeakRSI &&
-        stochiRSI &&
-        bullishEngulfing
-    ),
+    signal: finalSignal,
     indicators: [
+      {
+        name: "RSI Oversold (<30)",
+        signal: boolToSignal(rsiOversold),
+        data: analysis.rsi,
+      },
       {
         name: "Bullish Divergence Detected",
         signal: boolToSignal(bullishDivergence),
@@ -111,11 +119,6 @@ export function buyLongSignal({
         data: analysis.adx.adx,
       },
       { name: "EMA Trend Confirms", signal: boolToSignal(aboveEMA) },
-      {
-        name: "RSI Oversold",
-        signal: boolToSignal(notWeakRSI),
-        data: analysis.rsi,
-      },
       {
         name: "Stochastic RSI Oversold",
         signal: boolToSignal(stochiRSI),
@@ -129,41 +132,48 @@ export function buyLongSignal({
   }
 }
 
-export function sellLongSignal({
+export function sellRsiSignal({
   buy,
   currentPrice,
-  candles3,
-  candles15,
+  candles3, // Предположим, что мы используем 3-минутные свечи для отслеживания тренда
 }: SignalSellOpts): MetaSignal {
+  // Если не было сигнала на покупку, то и выходить не из чего
   if (!buy) {
     return { signal: 0, indicators: [{ name: "No buy signal", signal: 0 }] }
   }
 
-  const pnl = parseFloat(buy.qty) * (currentPrice - buy.price)
-  const takeProfitPnl = 0.2
-  const stopLossPnl = -0.5
-  const takeProfit = pnl > takeProfitPnl
-  const stopLoss = pnl < stopLossPnl
+  // Получаем сигнал супер-тренда с теми же параметрами, что использовали для входа
+  // Например, при входе мы использовали BUY_SIGNAL_CANDLES_LIMIT = 10 и multiplier = 2
+  const BUY_SIGNAL_CANDLES_LIMIT = 10
+  const MULTIPLIER = 2
 
-  if (takeProfit || stopLoss) {
+  const { signal: supertrendSignal } = getSupertrendSignal(
+    currentPrice,
+    candles3,
+    BUY_SIGNAL_CANDLES_LIMIT,
+    MULTIPLIER
+  )
+
+  // Если супер-тренд перестал быть бычьим (signal вернул 0), значит тренд закончился.
+  // Выходим из позиции.
+  if (supertrendSignal === 0) {
     return {
       signal: -1,
       indicators: [
-        { name: `Take Profit or Stop Loss Triggered`, signal: -1, data: pnl },
+        {
+          name: "Supertrend Reversal Detected",
+          signal: -1,
+          data: supertrendSignal,
+        },
       ],
     }
   }
 
-  const { signal: st3 } = getSupertrendSignal(currentPrice, candles3, 10, 2)
-  const { signal: st15 } = getSupertrendSignal(currentPrice, candles15, 10, 2)
-
-  const signal = getCrossingSignal([st3, st15])
-
+  // Если супер-тренд всё ещё бычий, то остаёмся в позиции
   return {
-    signal,
+    signal: 0,
     indicators: [
-      { name: "Supertrend 3m", signal: st3 },
-      { name: "Supertrend 15m", signal: st15 },
+      { name: "Trend Continues (Supertrend still bullish)", signal: 1 },
     ],
   }
 }

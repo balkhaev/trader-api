@@ -9,11 +9,11 @@ import { CreateTransaction, Transaction, TransactionWithTs } from "./types"
 const blacklist = ["on1yUpq8wmKxFoW1Arnu7G4xwm6T9yJ8dHwyHDfkiKS"]
 const blacklistedMints: string[] = []
 
-export const SECONDS_TO_LISTEN_COIN = 120
-export const BUY_AMOUNT_IN_SOL = 0.08
+export const SECONDS_TO_LISTEN_COIN = 7200 // 2h
+export const BUY_AMOUNT_IN_SOL = 0.3
 
-export async function listenMoneyEvents(opts: StrategyOpts) {
-  const pool = opts.mode === "test" ? DEVNET_POOL : QUICKNODE_POLL
+export async function listenMoneyEvents(opts?: StrategyOpts) {
+  const pool = opts?.mode === "test" ? DEVNET_POOL : QUICKNODE_POLL
 
   console.log(`Started with pool - ${pool}`)
 
@@ -29,6 +29,14 @@ export async function listenMoneyEvents(opts: StrategyOpts) {
 
   pumpFunEvents.on("buy", async (data: any) => {
     try {
+      console.log(
+        "\x1b[32m",
+        "buyed",
+        data.coin.mint,
+        new Date().toLocaleTimeString(),
+        data.tx.marketCapSol.toFixed(2),
+        "\x1b[90m"
+      )
       await handleBuy(data, blacklist, blacklistedMints, pool)
     } catch (e) {
       console.log("error in handle buy", e)
@@ -38,7 +46,24 @@ export async function listenMoneyEvents(opts: StrategyOpts) {
 
   pumpFunEvents.on(
     "sell",
-    async ({ coin, tx }: { coin: CreateTransaction; tx?: Transaction }) => {
+    async ({
+      coin,
+      tx,
+      ratio,
+    }: {
+      coin: CreateTransaction
+      tx?: Transaction
+      ratio: number
+    }) => {
+      console.log(
+        "\x1b[31m",
+        "selled",
+        coin.mint,
+        new Date().toLocaleTimeString(),
+        tx?.marketCapSol.toFixed(2),
+        ratio,
+        "\x1b[90m"
+      )
       try {
         if (await handleSell(coin, tx, pool)) {
           totalDestroy()
@@ -57,7 +82,7 @@ export async function listenMoneyEvents(opts: StrategyOpts) {
       tx: TransactionWithTs
       result: { signal: number; data: string }
     }) => {
-      const { coin, tx, result } = data
+      const { coin, tx } = data
       const buyed = getBuyedTx()
 
       if (buyed && buyed?.mint !== tx.mint) {
@@ -68,8 +93,6 @@ export async function listenMoneyEvents(opts: StrategyOpts) {
         ...tx,
         name: coin.name,
         initialBuy: coin.initialBuy,
-        signal: result.signal,
-        data: result.data,
       })
     }
   )

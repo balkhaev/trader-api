@@ -39,16 +39,16 @@ export async function handleBuy(
   addWaitBuy(coin.mint)
   addActiveDeal(tx.mint)
 
-  const signature = await sendPumpTransaction({
-    action: "buy",
-    mint: coin.mint,
-    amount: BUY_AMOUNT_IN_SOL,
-    pool,
-  })
+  // const signature = await sendPumpTransaction({
+  //   action: "buy",
+  //   mint: coin.mint,
+  //   amount: BUY_AMOUNT_IN_SOL,
+  //   pool,
+  // })
 
   setBuyedTx(tx)
   addBuyed(coin.mint)
-  io.emit("buyed", JSON.stringify({ tx, coin, signature }))
+  // io.emit("buyed", JSON.stringify({ tx, coin, signature }))
 
   removeWaitBuy(coin.mint)
 }
@@ -70,17 +70,17 @@ export async function handleSell(
 
   waitSellIndex = addWaitSell(coin.mint)
 
-  const signature = await sendPumpTransaction({
-    action: "sell",
-    mint: coin.mint,
-    amount: "100%",
-    pool,
-  })
+  // const signature = await sendPumpTransaction({
+  //   action: "sell",
+  //   mint: coin.mint,
+  //   amount: "100%",
+  //   pool,
+  // })
 
   clearBuyedTx()
   addSelled(coin.mint)
   removeWaitSell(waitSellIndex)
-  io.emit("selled", JSON.stringify({ tx, coin, signature }))
+  // io.emit("selled", JSON.stringify({ tx, coin, signature }))
 
   return true
 }

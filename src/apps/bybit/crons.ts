@@ -188,7 +188,6 @@ export const checkPositionsSell = async () => {
         console.error("in sell cron", error)
       }
 
-      // Если сделка закрывается, удаляем её из trailingActivated, если она была там
       if (trailingActivated.has(buy.id)) {
         trailingActivated.delete(buy.id)
       }

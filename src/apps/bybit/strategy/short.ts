@@ -1,9 +1,9 @@
 import { getSupertrendSignal } from "../../blackbox/signals/supertrend"
-import { getCrossingSignal, reverseSignal } from "../../blackbox/strategies"
+import { getCrossingSignal, reverseSignal } from "../../blackbox/utils"
 import { MetaSignal, SignalOpts, SignalSellOpts } from "../types"
 import { isAboveEMA } from "../../blackbox/indicators/ema"
 import { boolToSignal } from "../utils"
-import { getTechnicalAnalyze } from "../../blackbox/indicators"
+import { getTechnicalAnalyze } from "../../blackbox/analyze"
 
 const BUY_SIGNAL_CANDLES_LIMIT = 10
 

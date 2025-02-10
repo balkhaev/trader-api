@@ -5,7 +5,7 @@ import {
   copilotRuntimeNodeHttpEndpoint,
 } from "@copilotkit/runtime"
 
-const MODEL_NAME = "llama3-70b-8192"
+const MODEL_NAME = "llama-3.3-70b-versatile"
 // const MODEL_NAME = "llama3-groq-70b-8192-tool-use-preview"
 
 const serviceAdapter = new GroqAdapter({ model: MODEL_NAME })

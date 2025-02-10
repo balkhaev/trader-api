@@ -1,6 +1,6 @@
 import WebSocket from "ws"
 import EventEmitter from "node:events"
-import { Transaction } from "./types"
+import { TransactionWithTs } from "./types"
 import { SECONDS_TO_LISTEN_COIN } from "."
 import { MIN_MARKET_CAP_LIMIT_IN_SOL, StrategyOpts, rateTx } from "./strategy"
 import {
@@ -10,14 +10,18 @@ import {
   thisMintIsActive,
   txToMsTx,
 } from "./state"
+import { rateTrader, traderEvents } from "./trader"
 
 export const pumpFunEvents = new EventEmitter()
 
-pumpFunEvents.setMaxListeners(100)
+pumpFunEvents.setMaxListeners(1000000)
 
-export function listenPumpFun(opts: StrategyOpts) {
+export function listenPumpFun(opts?: StrategyOpts) {
   const newTokenWs = new WebSocket("wss://pumpportal.fun/api/data")
   const tradesWs = new WebSocket("wss://pumpportal.fun/api/data")
+
+  newTokenWs.setMaxListeners(1000000)
+  tradesWs.setMaxListeners(1000000)
 
   newTokenWs.on("open", function open() {
     newTokenWs.send(
@@ -28,15 +32,17 @@ export function listenPumpFun(opts: StrategyOpts) {
   })
 
   newTokenWs.on("message", function message(data) {
-    const coin = JSON.parse(data as unknown as string)
+    let newCoin = JSON.parse(data.toString())
 
-    if (coin.message) return
+    if (newCoin.message) return
+
+    newCoin.timestamp = new Date().getTime()
 
     const unsubscribeTokenTrade = () => {
       tradesWs.send(
         JSON.stringify({
           method: "unsubscribeTokenTrade",
-          keys: [coin.mint],
+          keys: [newCoin.mint],
         })
       )
 
@@ -51,41 +57,43 @@ export function listenPumpFun(opts: StrategyOpts) {
     tradesWs.send(
       JSON.stringify({
         method: "subscribeTokenTrade",
-        keys: [coin.mint],
+        keys: [newCoin.mint],
       })
     )
 
-    tradesWs.on("message", function message(data) {
-      const msg = JSON.parse(data as unknown as string)
+    traderEvents.on("buy", (coin, tx) => {
+      if (coin.mint !== newCoin.mint) return
+      console.log("!!!!!!!!!!! buyed", coin.mint)
+      // pumpFunEvents.emit("buy", { coin, tx })
+      clearTimeout(timeoutId)
+    })
 
-      if (msg.message || msg.mint !== coin.mint) return
+    traderEvents.on("sell", (coin, tx, ratio = 1) => {
+      if (coin.mint !== newCoin.mint) return
+      console.log("!!!!!!!!!!! selling", coin.mint, ratio)
+      unsubscribeTokenTrade()
+      // pumpFunEvents.emit("sell", { coin, tx, ratio })
+    })
+
+    tradesWs.on("message", async function message(data) {
+      const msg = JSON.parse(data.toString())
+
+      if (msg.message || msg.mint !== newCoin.mint) return
       if (isActive() && !thisMintIsActive(msg.mint)) return
 
-      const tx = msg as Transaction
+      const tx: TransactionWithTs = txToMsTx(msg)
 
       if (
         !coinHaveHistory(tx.mint) &&
         MIN_MARKET_CAP_LIMIT_IN_SOL > tx.marketCapSol
       ) {
-        pumpFunEvents.emit("new-token", coin)
+        pumpFunEvents.emit("new-token", newCoin)
       }
 
-      const txWithTs = txToMsTx(tx)
-      const result = rateTx(txWithTs, coin, opts)
+      rateTrader(tx, newCoin, opts)
+      addPrevTx(tx.mint, tx)
 
-      addPrevTx(tx.mint, txWithTs)
-
-      pumpFunEvents.emit("tx", { coin, tx, result })
-
-      if (result.signal === 1) {
-        pumpFunEvents.emit("buy", { coin, tx, result })
-        clearTimeout(timeoutId)
-      }
-
-      if (result.signal === -1) {
-        pumpFunEvents.emit("sell", { coin, tx, result })
-        unsubscribeTokenTrade()
-      }
+      pumpFunEvents.emit("tx", { coin: newCoin, tx })
     })
   })
 

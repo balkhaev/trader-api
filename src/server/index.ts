@@ -4,11 +4,12 @@ import cors from "cors"
 
 import pumpRouter from "../apps/pump-fun/router"
 import bybitRouter from "../apps/bybit/router"
+import scapperRouter from "../apps/scapper/router"
 import { createWebSocketServer } from "./websocket"
 import { createBullServer } from "./bull"
 import { createCopilot } from "./copilot"
 
-const routers = [pumpRouter, bybitRouter]
+const routers = [pumpRouter, bybitRouter, scapperRouter]
 
 export const app = express()
 export const server = http.createServer(app)

@@ -11,84 +11,48 @@ export type Database = {
     Tables: {
       analysis: {
         Row: {
-          adx: Json | null
-          atr: number | null
-          bollinger_bands: Json | null
-          cci: number | null
           change24h: number | null
           created_at: string | null
           e0v1e: Json | null
-          ema: number | null
           id: number
-          indicators: Json | null
           last_price: number
           long: Json
-          macd: Json | null
-          momentum: number | null
-          obv: number | null
           open_interest: number | null
           rating: number | null
-          rsi: number | null
           short: Json
-          signal: number | null
-          sma: number | null
-          stochastic_rsi: Json | null
           symbol: string
-          trend: string
+          ta240: Json | null
+          ta30: Json | null
           volume24h: number
         }
         Insert: {
-          adx?: Json | null
-          atr?: number | null
-          bollinger_bands?: Json | null
-          cci?: number | null
           change24h?: number | null
           created_at?: string | null
           e0v1e?: Json | null
-          ema?: number | null
           id?: never
-          indicators?: Json | null
           last_price: number
           long: Json
-          macd?: Json | null
-          momentum?: number | null
-          obv?: number | null
           open_interest?: number | null
           rating?: number | null
-          rsi?: number | null
           short: Json
-          signal?: number | null
-          sma?: number | null
-          stochastic_rsi?: Json | null
           symbol: string
-          trend: string
+          ta240?: Json | null
+          ta30?: Json | null
           volume24h?: number
         }
         Update: {
-          adx?: Json | null
-          atr?: number | null
-          bollinger_bands?: Json | null
-          cci?: number | null
           change24h?: number | null
           created_at?: string | null
           e0v1e?: Json | null
-          ema?: number | null
           id?: never
-          indicators?: Json | null
           last_price?: number
           long?: Json
-          macd?: Json | null
-          momentum?: number | null
-          obv?: number | null
           open_interest?: number | null
           rating?: number | null
-          rsi?: number | null
           short?: Json
-          signal?: number | null
-          sma?: number | null
-          stochastic_rsi?: Json | null
           symbol?: string
-          trend?: string
+          ta240?: Json | null
+          ta30?: Json | null
           volume24h?: number
         }
         Relationships: []
@@ -141,6 +105,141 @@ export type Database = {
         }
         Relationships: []
       }
+      coins: {
+        Row: {
+          created_at: string
+          id: number
+          name: string | null
+          rating: number | null
+          short: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name?: string | null
+          rating?: number | null
+          short?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string | null
+          rating?: number | null
+          short?: string | null
+        }
+        Relationships: []
+      }
+      funding_rates: {
+        Row: {
+          exchange_id: string
+          funding_rate: number
+          id: number
+          liquidity_score: number
+          symbol: string
+          timestamp: string | null
+        }
+        Insert: {
+          exchange_id: string
+          funding_rate: number
+          id?: never
+          liquidity_score: number
+          symbol: string
+          timestamp?: string | null
+        }
+        Update: {
+          exchange_id?: string
+          funding_rate?: number
+          id?: never
+          liquidity_score?: number
+          symbol?: string
+          timestamp?: string | null
+        }
+        Relationships: []
+      }
+      news: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: number
+          parsed_at: string | null
+          tags: string[]
+          title: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: number
+          parsed_at?: string | null
+          tags?: string[]
+          title?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: number
+          parsed_at?: string | null
+          tags?: string[]
+          title?: string | null
+        }
+        Relationships: []
+      }
+      news_coins: {
+        Row: {
+          coin: number | null
+          created_at: string
+          id: number
+          news: number | null
+        }
+        Insert: {
+          coin?: number | null
+          created_at?: string
+          id?: number
+          news?: number | null
+        }
+        Update: {
+          coin?: number | null
+          created_at?: string
+          id?: number
+          news?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_coins_coin_fkey"
+            columns: ["coin"]
+            isOneToOne: false
+            referencedRelation: "coins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_coins_news_fkey"
+            columns: ["news"]
+            isOneToOne: false
+            referencedRelation: "news"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scams: {
+        Row: {
+          ca: string | null
+          created_at: string
+          id: number
+          name: string
+        }
+        Insert: {
+          ca?: string | null
+          created_at?: string
+          id?: number
+          name: string
+        }
+        Update: {
+          ca?: string | null
+          created_at?: string
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
       sells: {
         Row: {
           candles1: Json
@@ -177,6 +276,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tweets: {
+        Row: {
+          author: string | null
+          bookmarks: number | null
+          content: string | null
+          created_at: string
+          hashtags: string[] | null
+          id: number
+          likes: number | null
+          retweets: number | null
+          views: number | null
+        }
+        Insert: {
+          author?: string | null
+          bookmarks?: number | null
+          content?: string | null
+          created_at?: string
+          hashtags?: string[] | null
+          id?: number
+          likes?: number | null
+          retweets?: number | null
+          views?: number | null
+        }
+        Update: {
+          author?: string | null
+          bookmarks?: number | null
+          content?: string | null
+          created_at?: string
+          hashtags?: string[] | null
+          id?: number
+          likes?: number | null
+          retweets?: number | null
+          views?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -185,30 +320,18 @@ export type Database = {
       get_most_recent_unique_symbols: {
         Args: Record<PropertyKey, never>
         Returns: {
-          adx: Json | null
-          atr: number | null
-          bollinger_bands: Json | null
-          cci: number | null
           change24h: number | null
           created_at: string | null
           e0v1e: Json | null
-          ema: number | null
           id: number
-          indicators: Json | null
           last_price: number
           long: Json
-          macd: Json | null
-          momentum: number | null
-          obv: number | null
           open_interest: number | null
           rating: number | null
-          rsi: number | null
           short: Json
-          signal: number | null
-          sma: number | null
-          stochastic_rsi: Json | null
           symbol: string
-          trend: string
+          ta240: Json | null
+          ta30: Json | null
           volume24h: number
         }[]
       }

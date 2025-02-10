@@ -8,7 +8,7 @@ interface CTIData {
 
 export function calculateCTI(prices: number[], period: number): CTIData[] {
   if (prices.length < period) {
-    throw new Error("Not enough data points to calculate CTI.")
+    return []
   }
 
   const ctiData: CTIData[] = []

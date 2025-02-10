@@ -1,7 +1,7 @@
 import { transactionsToCandles } from "./utils"
 import { io } from "../../server"
 import { CreateTransaction, TransactionWithTs } from "./types"
-import { getSupertrendCrossingSignal } from "../blackbox/strategies"
+import { getSupertrendCrossingSignal } from "../blackbox/utils"
 import {
   getBuyedTx,
   getCoinCreatingTime,
@@ -12,7 +12,7 @@ import { RecursiveRequired } from "../../types"
 import { pumpFunEvents } from "./listener"
 import { getSupertrendSignal } from "../blackbox/signals/supertrend"
 
-export const MIN_MARKET_CAP_LIMIT_IN_SOL = 50
+export const MIN_MARKET_CAP_LIMIT_IN_SOL = 10
 export const MAX_MARKET_CAP_LIMIT_IN_SOL = 150
 
 let saferTimeout: NodeJS.Timeout

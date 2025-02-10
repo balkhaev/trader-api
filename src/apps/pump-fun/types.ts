@@ -29,7 +29,11 @@ export interface CreateTransaction extends BaseTransaction {
 
 export type Transaction = BuySellTransaction | CreateTransaction
 
-export type TransactionWithTs = Transaction & { timestamp: number }
+export type TransactionWithTs = WithTs<Transaction>
+
+export type BuySellTxTs = WithTs<BuySellTransaction>
+
+export type WithTs<T> = T & { timestamp: number }
 
 export enum SellSignalTypes {
   sell = "sell",

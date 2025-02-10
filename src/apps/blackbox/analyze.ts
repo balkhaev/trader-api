@@ -166,15 +166,6 @@ export function getTechnicalAnalyze(
 
   const lastPrice = prices[prices.length - 1]
 
-  let trend: "Bullish" | "Bearish" | "Neutral" = "Neutral"
-  if (lastRSI !== undefined && lastMACD?.histogram !== undefined) {
-    if (lastRSI > 50 && lastMACD.histogram > 0) {
-      trend = "Bullish"
-    } else if (lastRSI < 50 && lastMACD.histogram < 0) {
-      trend = "Bearish"
-    }
-  }
-
   return {
     lastPrice,
     sma: lastSMA ?? null,
@@ -186,7 +177,7 @@ export function getTechnicalAnalyze(
     macd: lastMACD ?? null,
     bollingerBands: lastBollinger ?? null,
     cci: lastCCI ?? null,
-    cti: lastCTI.cti ?? null,
+    cti: lastCTI?.cti ?? null,
     atr: lastATR ?? null,
     obv: lastOBV ?? null,
     momentum: lastMomentum ?? null,
@@ -194,6 +185,5 @@ export function getTechnicalAnalyze(
     ma120: lastMa120 ?? null,
     ma240: lastMa240 ?? null,
     fastk,
-    trend,
   }
 }

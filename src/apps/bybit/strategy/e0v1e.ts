@@ -1,5 +1,5 @@
 import { Signal } from "../../../types"
-import { getTechnicalAnalyze } from "../../blackbox/indicators"
+import { getTechnicalAnalyze } from "../../blackbox/analyze"
 import { MetaSignal, SignalOpts, SignalSellOpts } from "../types"
 import { boolToSignal } from "../utils"
 

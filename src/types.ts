@@ -48,7 +48,6 @@ export type Analyze = {
   ma240: number | null
   fastk: number | null
   momentum: number | null
-  trend: "Bullish" | "Bearish" | "Neutral"
   change24h?: number
   volume24h?: number
 }

@@ -1,5 +1,5 @@
 import Queue from "bull"
-import { getTechnicalAnalyze } from "../blackbox/indicators"
+import { getTechnicalAnalyze } from "../blackbox/analyze"
 import { io } from "../../server"
 import { bybitRestClient } from "./sdk/clients"
 import { tickerAdapter } from "./sdk/adapters"
@@ -9,6 +9,7 @@ import { KlineIntervalV3 } from "bybit-api"
 import { buyLongSignal } from "./strategy/long"
 import { buyShortSignal } from "./strategy/short"
 import { buyEovieSignal } from "./strategy/e0v1e"
+import { buyRsiSignal } from "./strategy/rsi"
 
 export const analyzeSymbolQueue = new Queue<{ symbol: string }>(
   "bybit-analyze",
@@ -44,8 +45,6 @@ analyzeSymbolQueue.process(4, async (job) => {
   })
 
   const ticker = tickerAdapter(tickers.list[0])
-  // const analysis3 = getTechnicalAnalyze(candles3)
-  // const analysis15 = getTechnicalAnalyze(candles15)
   const analysis30 = getTechnicalAnalyze(candles30)
 
   const rating = ratingAnalyze({
@@ -53,7 +52,7 @@ analyzeSymbolQueue.process(4, async (job) => {
     ticker,
   })
 
-  const long = buyLongSignal({
+  const long = buyRsiSignal({
     analysis: analysis30,
     currentPrice: ticker.lastPrice,
     candles1,
@@ -95,6 +94,8 @@ analyzeSymbolQueue.process(4, async (job) => {
     volume24h: parseInt(tickers.list[0].volume24h),
     change24h: parseFloat(tickers.list[0].price24hPcnt),
     symbol: job.data.symbol,
+    ta30: analysis30,
+    ta240: getTechnicalAnalyze(candles240),
   }
 })
 

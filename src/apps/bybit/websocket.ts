@@ -3,7 +3,7 @@ import { io } from "../../server"
 import { WS_KEY_MAP, isWsOrderbookEventV5 } from "bybit-api"
 import { addTrades, setTimeframeKlines, getTimeframeKlines } from "./state"
 import { Candle } from "../../types"
-import { getTechnicalAnalyze } from "../blackbox/indicators"
+import { getTechnicalAnalyze } from "../blackbox/analyze"
 import { fetchKline } from "./sdk/methods"
 import { AllowedIntervals, BybitWS } from "./types"
 
@@ -34,37 +34,37 @@ bybitWsClient.on("update", (data: BybitWS) => {
     io.emit("orderbook", JSON.stringify(data.data))
   }
 
-  if (data.topic?.startsWith("kline")) {
-    const timeframe = data.topic.split(".")[1] as AllowedIntervals
-    const symbolKlines = getTimeframeKlines(timeframe)
+  // if (data.topic?.startsWith("kline")) {
+  //   const timeframe = data.topic.split(".")[1] as AllowedIntervals
+  //   const symbolKlines = getTimeframeKlines(timeframe)
 
-    data.data
-      .map((kline: any) => ({
-        time: parseInt(kline.timestamp),
-        start: parseInt(kline.start) / 1000,
-        open: parseFloat(kline.open),
-        close: parseFloat(kline.close),
-        high: parseFloat(kline.high),
-        low: parseFloat(kline.low),
-        volume: parseFloat(kline.volume),
-        turnover: parseFloat(kline.turnover),
-      }))
-      .forEach((kline: Candle) => setTimeframeKlines(timeframe, kline))
+  //   data.data
+  //     .map((kline: any) => ({
+  //       time: parseInt(kline.timestamp),
+  //       start: parseInt(kline.start) / 1000,
+  //       open: parseFloat(kline.open),
+  //       close: parseFloat(kline.close),
+  //       high: parseFloat(kline.high),
+  //       low: parseFloat(kline.low),
+  //       volume: parseFloat(kline.volume),
+  //       turnover: parseFloat(kline.turnover),
+  //     }))
+  //     .forEach((kline: Candle) => setTimeframeKlines(timeframe, kline))
 
-    io.emit("ta" + timeframe, JSON.stringify(getTechnicalAnalyze(symbolKlines)))
-  }
+  //   io.emit("ta" + timeframe, JSON.stringify(getTechnicalAnalyze(symbolKlines)))
+  // }
 
-  if (data.topic.includes("publicTrade.") && data.data) {
-    const symbol = data.topic.split(".")[1]
+  // if (data.topic.includes("publicTrade.") && data.data) {
+  //   const symbol = data.topic.split(".")[1]
 
-    const trades = data.data.map((trade: any) => ({
-      time: Math.floor(trade.T / 1000),
-      price: parseFloat(trade.p),
-      volume: parseFloat(trade.v),
-    }))
+  //   const trades = data.data.map((trade: any) => ({
+  //     time: Math.floor(trade.T / 1000),
+  //     price: parseFloat(trade.p),
+  //     volume: parseFloat(trade.v),
+  //   }))
 
-    addTrades(symbol, trades)
-  }
+  //   addTrades(symbol, trades)
+  // }
 })
 
 let intervalId2: NodeJS.Timeout | null = null
@@ -81,10 +81,17 @@ export async function listenBybit(symbol: string) {
   bybitWsClient.subscribeV5(getSubscriptions(symbol), "spot")
 
   intervalId2 = setInterval(() => {
+    preloadCandles.forEach((interval) => {
+      fetchKline({ symbol, interval, limit: 20 }).then((candles) => {
+        candles.forEach((c) => setTimeframeKlines(interval, c))
+      })
+    })
+
     io.emit(
       "candles",
       getTimeframeKlines("1").slice(-40),
-      getTimeframeKlines("3").slice(-40)
+      getTimeframeKlines("3").slice(-40),
+      getTimeframeKlines("15").slice(-40)
     )
   }, 2000)
 }
