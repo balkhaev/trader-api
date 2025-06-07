@@ -1,0 +1,88 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: tweet_analyzer
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    restart: always
+    ports:
+      - "6379:6379"
+
+  tweet-analyzer:
+    build:
+      context: ./apps/backend/tweet-analyzer
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_NAME: tweet_analyzer
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "3001:3000"
+
+  tweet-scraper:
+    build:
+      context: ./apps/backend/tweet-scraper
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_NAME: tweet_analyzer
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "8001:8000"
+
+  ai-service:
+    build:
+      context: ./apps/backend/ai-service
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_NAME: tweet_analyzer
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "9001:9000"
+
+  admin:
+    build:
+      context: ./apps/frontend/admin
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - tweet-analyzer
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:

@@ -1,0 +1,13 @@
+{
+  "name": "tweet-scraper",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "setup": "python3 -m venv venv && venv/bin/python -m pip install -r requirements.txt",
+    "predev": "test -d venv || npm run setup",
+    "dev": "venv/bin/python main.py",
+    "start": "venv/bin/python main.py",
+    "lint": "source venv/bin/activate && ruff .",
+    "build": "echo 'no build step for python service'"
+  }
+}
